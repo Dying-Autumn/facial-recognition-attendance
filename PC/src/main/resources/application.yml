@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: facial-recognition-attendance
+  
+  # 数据源配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/facial_recognition?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    
+  # 连接池配置
+  hikari:
+    minimum-idle: 5
+    maximum-pool-size: 20
+    connection-timeout: 30000
+    idle-timeout: 600000
+    max-lifetime: 1800000
+
+# MyBatis配置
+mybatis:
+  # 实体类所在包
+  type-aliases-package: com.example.demo.entity
+  # Mapper XML文件位置
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    # 开启驼峰命名转换
+    map-underscore-to-camel-case: true
+    # 打印SQL日志
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 日志配置
+logging:
+  level:
+    com.example.demo: debug
+    org.springframework: info
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n'
+
