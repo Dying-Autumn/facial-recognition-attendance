@@ -336,9 +336,9 @@ SELECT
     f.ModuleName,
     f.Description AS FunctionDescription,
     rfp.AssignedDate
-FROM Role r
-LEFT JOIN RoleFunctionPermission rfp ON r.RoleID = rfp.RoleID
-LEFT JOIN Function f ON rfp.FunctionID = f.FunctionID AND f.IsActive = 1
+FROM `Role` r
+LEFT JOIN `RoleFunctionPermission` rfp ON r.RoleID = rfp.RoleID
+LEFT JOIN `Function` f ON rfp.FunctionID = f.FunctionID AND f.IsActive = 1
 ORDER BY r.RoleID, f.ModuleName, f.SortOrder;
 
 -- 视图2: 用户权限查询视图
@@ -353,10 +353,10 @@ SELECT
     f.FunctionName,
     f.FunctionCode,
     f.ModuleName
-FROM User u
-JOIN Role r ON u.RoleID = r.RoleID
-JOIN RoleFunctionPermission rfp ON r.RoleID = rfp.RoleID
-JOIN Function f ON rfp.FunctionID = f.FunctionID
+FROM `User` u
+JOIN `Role` r ON u.RoleID = r.RoleID
+JOIN `RoleFunctionPermission` rfp ON r.RoleID = rfp.RoleID
+JOIN `Function` f ON rfp.FunctionID = f.FunctionID
 WHERE u.IsActive = 1 AND f.IsActive = 1
 ORDER BY u.UserID, f.ModuleName, f.SortOrder;
 
@@ -364,7 +364,7 @@ ORDER BY u.UserID, f.ModuleName, f.SortOrder;
 CREATE VIEW `v_student_attendance_stats` AS
 SELECT 
     s.StudentID,
-    s.StudentName,
+    u.RealName AS StudentName,
     cc.ClassID,
     cc.ClassName,
     c.CourseName,
@@ -374,12 +374,13 @@ SELECT
     SUM(CASE WHEN ar.AttendanceResult = '早退' THEN 1 ELSE 0 END) AS EarlyLeaveCount,
     SUM(CASE WHEN ar.AttendanceResult = '缺勤' THEN 1 ELSE 0 END) AS AbsentCount,
     SUM(CASE WHEN ar.AttendanceResult = '请假' THEN 1 ELSE 0 END) AS LeaveCount
-FROM Student s
-LEFT JOIN StudentCourseClass scc ON s.StudentID = scc.StudentID
-LEFT JOIN CourseClass cc ON scc.ClassID = cc.ClassID
-LEFT JOIN Course c ON cc.CourseID = c.CourseID
-LEFT JOIN AttendanceTask at ON cc.ClassID = at.ClassID
-LEFT JOIN AttendanceRecord ar ON at.TaskID = ar.TaskID AND s.StudentID = ar.StudentID
+FROM `Student` s
+JOIN `User` u ON s.UserID = u.UserID
+LEFT JOIN `StudentCourseClass` scc ON s.StudentID = scc.StudentID
+LEFT JOIN `CourseClass` cc ON scc.ClassID = cc.ClassID
+LEFT JOIN `Course` c ON cc.CourseID = c.CourseID
+LEFT JOIN `AttendanceTask` at ON cc.ClassID = at.ClassID
+LEFT JOIN `AttendanceRecord` ar ON at.TaskID = ar.TaskID AND s.StudentID = ar.StudentID
 GROUP BY s.StudentID, cc.ClassID;
 
 -- 完成

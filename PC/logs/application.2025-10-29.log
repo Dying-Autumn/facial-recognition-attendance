@@ -1,0 +1,50 @@
+2025-10-29 20:58:26.960 [main] INFO  o.s.t.c.s.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.example.demo.DemoApplicationTests]: DemoApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2025-10-29 20:58:27.060 [main] INFO  o.s.b.t.c.SpringBootTestContextBootstrapper - Found @SpringBootConfiguration com.example.demo.DemoApplication for test class com.example.demo.DemoApplicationTests
+2025-10-29 20:58:27.468 [main] INFO  c.example.demo.DemoApplicationTests - Starting DemoApplicationTests using Java 17.0.15 with PID 20024 (started by ASUS in E:\Program Files\GithubProject\github_facial-recognition-attendance\PC)
+2025-10-29 20:58:27.469 [main] DEBUG c.example.demo.DemoApplicationTests - Running with Spring Boot v3.5.7, Spring v6.2.12
+2025-10-29 20:58:27.470 [main] INFO  c.example.demo.DemoApplicationTests - No active profile set, falling back to 1 default profile: "default"
+2025-10-29 20:58:28.170 [main] WARN  o.m.s.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.example.demo]' package. Please check your configuration.
+2025-10-29 20:58:29.091 [main] INFO  c.example.demo.DemoApplicationTests - Started DemoApplicationTests in 1.901 seconds (process running for 2.908)
+2025-10-29 20:59:00.107 [main] INFO  com.example.demo.DemoApplication - Starting DemoApplication using Java 17.0.15 with PID 2696 (E:\Program Files\GithubProject\github_facial-recognition-attendance\PC\target\classes started by ASUS in E:\Program Files\GithubProject\github_facial-recognition-attendance\PC)
+2025-10-29 20:59:00.109 [main] DEBUG com.example.demo.DemoApplication - Running with Spring Boot v3.5.7, Spring v6.2.12
+2025-10-29 20:59:00.110 [main] INFO  com.example.demo.DemoApplication - No active profile set, falling back to 1 default profile: "default"
+2025-10-29 20:59:00.541 [main] WARN  o.m.s.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.example.demo]' package. Please check your configuration.
+2025-10-29 20:59:00.832 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-10-29 20:59:00.842 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-10-29 20:59:00.845 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-10-29 20:59:00.845 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.48]
+2025-10-29 20:59:00.891 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-10-29 20:59:00.891 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 751 ms
+2025-10-29 20:59:01.201 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-10-29 20:59:01.220 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2025-10-29 20:59:01.227 [main] INFO  com.example.demo.DemoApplication - Started DemoApplication in 1.438 seconds (process running for 1.797)
+2025-10-29 20:59:09.069 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-10-29 20:59:09.069 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-10-29 20:59:09.070 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2025-10-29 21:01:13.270 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-10-29 21:01:13.707 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-10-29 21:02:23.223 [main] INFO  o.s.t.c.s.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.example.demo.DemoApplicationTests]: DemoApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2025-10-29 21:02:23.322 [main] INFO  o.s.b.t.c.SpringBootTestContextBootstrapper - Found @SpringBootConfiguration com.example.demo.DemoApplication for test class com.example.demo.DemoApplicationTests
+2025-10-29 21:02:23.730 [main] INFO  c.example.demo.DemoApplicationTests - Starting DemoApplicationTests using Java 17.0.15 with PID 15720 (started by ASUS in E:\Program Files\GithubProject\github_facial-recognition-attendance\PC)
+2025-10-29 21:02:23.732 [main] DEBUG c.example.demo.DemoApplicationTests - Running with Spring Boot v3.5.7, Spring v6.2.12
+2025-10-29 21:02:23.732 [main] INFO  c.example.demo.DemoApplicationTests - No active profile set, falling back to 1 default profile: "default"
+2025-10-29 21:02:24.433 [main] WARN  o.m.s.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.example.demo]' package. Please check your configuration.
+2025-10-29 21:02:24.729 [main] INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2025-10-29 21:02:25.350 [main] INFO  c.example.demo.DemoApplicationTests - Started DemoApplicationTests in 1.893 seconds (process running for 2.868)
+2025-10-29 21:03:19.380 [main] INFO  o.s.t.c.s.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.example.demo.DemoApplicationTests]: DemoApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2025-10-29 21:04:08.470 [main] INFO  com.facial.recognition.Main - Starting Main using Java 17.0.15 with PID 15192 (E:\Program Files\GithubProject\github_facial-recognition-attendance\PC\target\classes started by ASUS in E:\Program Files\GithubProject\github_facial-recognition-attendance\PC)
+2025-10-29 21:04:08.473 [main] INFO  com.facial.recognition.Main - No active profile set, falling back to 1 default profile: "default"
+2025-10-29 21:04:08.906 [main] WARN  o.m.s.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.facial.recognition]' package. Please check your configuration.
+2025-10-29 21:04:09.197 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-10-29 21:04:09.207 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-10-29 21:04:09.209 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-10-29 21:04:09.209 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.48]
+2025-10-29 21:04:09.253 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-10-29 21:04:09.254 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 750 ms
+2025-10-29 21:04:09.339 [main] INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2025-10-29 21:04:09.587 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-10-29 21:04:09.604 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2025-10-29 21:04:09.611 [main] INFO  com.facial.recognition.Main - Started Main in 1.456 seconds (process running for 1.823)
+2025-10-29 21:04:12.884 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-10-29 21:04:12.884 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-10-29 21:04:12.885 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms

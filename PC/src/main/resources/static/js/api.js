@@ -1,0 +1,206 @@
+// API基础配置
+const API_BASE_URL = 'http://localhost:8080/api';
+
+// API工具类
+class API {
+    // 通用请求方法
+    static async request(url, options = {}) {
+        const defaultOptions = {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        };
+
+        const config = { ...defaultOptions, ...options };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}${url}`, config);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // 如果是204 No Content，直接返回
+            if (response.status === 204) {
+                return null;
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('API请求失败:', error);
+            throw error;
+        }
+    }
+
+    // GET请求
+    static get(url) {
+        return this.request(url, { method: 'GET' });
+    }
+
+    // POST请求
+    static post(url, data) {
+        return this.request(url, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    // PUT请求
+    static put(url, data) {
+        return this.request(url, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    }
+
+    // DELETE请求
+    static delete(url) {
+        return this.request(url, { method: 'DELETE' });
+    }
+}
+
+// 学生API
+class StudentAPI {
+    // 获取所有学生
+    static getAll() {
+        return API.get('/students');
+    }
+
+    // 根据ID获取学生
+    static getById(id) {
+        return API.get(`/students/${id}`);
+    }
+
+    // 根据学号获取学生
+    static getByNumber(studentNumber) {
+        return API.get(`/students/number/${studentNumber}`);
+    }
+
+    // 根据班级获取学生
+    static getByClass(className) {
+        return API.get(`/students/class/${className}`);
+    }
+
+    // 搜索学生
+    static search(className) {
+        return API.get(`/students/search?className=${encodeURIComponent(className)}`);
+    }
+
+    // 创建学生
+    static create(student) {
+        return API.post('/students', student);
+    }
+
+    // 更新学生
+    static update(id, student) {
+        return API.put(`/students/${id}`, student);
+    }
+
+    // 删除学生
+    static delete(id) {
+        return API.delete(`/students/${id}`);
+    }
+}
+
+// 角色API
+class RoleAPI {
+    // 获取所有角色
+    static getAll() {
+        return API.get('/roles');
+    }
+
+    // 根据ID获取角色
+    static getById(id) {
+        return API.get(`/roles/${id}`);
+    }
+
+    // 创建角色
+    static create(role) {
+        return API.post('/roles', role);
+    }
+
+    // 更新角色
+    static update(id, role) {
+        return API.put(`/roles/${id}`, role);
+    }
+
+    // 删除角色
+    static delete(id) {
+        return API.delete(`/roles/${id}`);
+    }
+}
+
+// 用户API
+class UserAPI {
+    // 获取所有用户
+    static getAll() {
+        return API.get('/users');
+    }
+
+    // 登录
+    static login(username, password) {
+        return API.post('/users/login', { username, password });
+    }
+
+    // 注册
+    static register(user) {
+        return API.post('/users/register', user);
+    }
+}
+
+// 课程班级API
+class CourseClassAPI {
+    // 获取所有课程班级
+    static getAll() {
+        return API.get('/course-classes');
+    }
+
+    // 根据ID获取课程班级
+    static getById(id) {
+        return API.get(`/course-classes/${id}`);
+    }
+
+    // 创建课程班级
+    static create(courseClass) {
+        return API.post('/course-classes', courseClass);
+    }
+
+    // 更新课程班级
+    static update(id, courseClass) {
+        return API.put(`/course-classes/${id}`, courseClass);
+    }
+
+    // 删除课程班级
+    static delete(id) {
+        return API.delete(`/course-classes/${id}`);
+    }
+}
+
+// 考勤任务API
+class AttendanceTaskAPI {
+    // 获取所有考勤任务
+    static getAll() {
+        return API.get('/attendance-tasks');
+    }
+
+    // 根据ID获取考勤任务
+    static getById(id) {
+        return API.get(`/attendance-tasks/${id}`);
+    }
+
+    // 创建考勤任务
+    static create(task) {
+        return API.post('/attendance-tasks', task);
+    }
+
+    // 更新考勤任务
+    static update(id, task) {
+        return API.put(`/attendance-tasks/${id}`, task);
+    }
+
+    // 删除考勤任务
+    static delete(id) {
+        return API.delete(`/attendance-tasks/${id}`);
+    }
+}
+
