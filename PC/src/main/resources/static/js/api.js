@@ -137,6 +137,26 @@ class UserAPI {
         return API.get('/users');
     }
 
+    // 根据ID获取用户
+    static getById(id) {
+        return API.get(`/users/${id}`);
+    }
+
+    // 创建用户
+    static create(user) {
+        return API.post('/users', user);
+    }
+
+    // 更新用户
+    static update(id, user) {
+        return API.put(`/users/${id}`, user);
+    }
+
+    // 删除用户
+    static delete(id) {
+        return API.delete(`/users/${id}`);
+    }
+
     // 登录
     static login(username, password) {
         return API.post('/users/login', { username, password });

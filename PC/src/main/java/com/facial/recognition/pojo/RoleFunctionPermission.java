@@ -60,35 +60,3 @@ public class RoleFunctionPermission implements Serializable {
     public void setUpdatedTime(LocalDateTime updatedTime) { this.updatedTime = updatedTime; }
 }
 
-// 复合主键类
-class RoleFunctionPermissionId implements Serializable {
-    private Integer roleId;
-    private Integer functionId;
-
-    public RoleFunctionPermissionId() {}
-
-    public RoleFunctionPermissionId(Integer roleId, Integer functionId) {
-        this.roleId = roleId;
-        this.functionId = functionId;
-    }
-
-    public Integer getRoleId() { return roleId; }
-    public void setRoleId(Integer roleId) { this.roleId = roleId; }
-
-    public Integer getFunctionId() { return functionId; }
-    public void setFunctionId(Integer functionId) { this.functionId = functionId; }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        RoleFunctionPermissionId that = (RoleFunctionPermissionId) o;
-        return roleId.equals(that.roleId) && functionId.equals(that.functionId);
-    }
-
-    @Override
-    public int hashCode() {
-        return roleId.hashCode() + functionId.hashCode();
-    }
-}
-

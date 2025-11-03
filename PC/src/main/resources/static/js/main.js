@@ -1,5 +1,228 @@
+// ========== 模态框和 Toast 管理 ==========
+
+// Toast 提示
+function showToast(message, type = 'success', duration = 3000) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+    };
+    
+    const titles = {
+        success: '成功',
+        error: '错误',
+        warning: '警告',
+        info: '提示'
+    };
+    
+    toast.innerHTML = `
+        <div class="toast-icon">${icons[type]}</div>
+        <div class="toast-content">
+            <div class="toast-title">${titles[type]}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close">×</button>
+    `;
+    
+    container.appendChild(toast);
+    
+    // 关闭按钮事件
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+        toast.style.animation = 'slideInRight 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+    });
+    
+    // 自动关闭
+    if (duration > 0) {
+        setTimeout(() => {
+            toast.style.animation = 'slideInRight 0.3s ease reverse';
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+}
+
+// 模态框管理
+const Modal = {
+    overlay: null,
+    title: null,
+    body: null,
+    footer: null,
+    submitBtn: null,
+    cancelBtn: null,
+    closeBtn: null,
+    currentCallback: null,
+    
+    init() {
+        this.overlay = document.getElementById('modal-overlay');
+        this.title = document.getElementById('modal-title');
+        this.body = document.getElementById('modal-body');
+        this.footer = document.getElementById('modal-footer');
+        this.submitBtn = document.getElementById('modal-submit');
+        this.cancelBtn = document.getElementById('modal-cancel');
+        this.closeBtn = document.getElementById('modal-close');
+        
+        // 绑定关闭事件
+        this.closeBtn.addEventListener('click', () => this.close());
+        this.cancelBtn.addEventListener('click', () => this.close());
+        this.overlay.addEventListener('click', (e) => {
+            if (e.target === this.overlay) this.close();
+        });
+        
+        // ESC 键关闭
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.overlay.classList.contains('active')) {
+                this.close();
+            }
+        });
+    },
+    
+    open(options) {
+        this.title.textContent = options.title || '提示';
+        this.body.innerHTML = options.content || '';
+        
+        // 显示/隐藏底部按钮
+        if (options.showFooter === false) {
+            this.footer.style.display = 'none';
+        } else {
+            this.footer.style.display = 'flex';
+        }
+        
+        // 设置按钮文本
+        this.submitBtn.textContent = options.submitText || '确定';
+        this.cancelBtn.textContent = options.cancelText || '取消';
+        
+        // 设置按钮样式
+        this.submitBtn.className = `btn ${options.submitClass || 'btn-accent'}`;
+        
+        // 保存回调
+        this.currentCallback = options.onSubmit;
+        
+        // 绑定提交事件
+        const submitHandler = () => {
+            if (this.currentCallback) {
+                const result = this.currentCallback();
+                // 如果返回 false，不关闭模态框
+                if (result !== false) {
+                    this.close();
+                }
+            } else {
+                this.close();
+            }
+        };
+        
+        // 移除旧的事件监听器
+        const newSubmitBtn = this.submitBtn.cloneNode(true);
+        this.submitBtn.parentNode.replaceChild(newSubmitBtn, this.submitBtn);
+        this.submitBtn = newSubmitBtn;
+        this.submitBtn.addEventListener('click', submitHandler);
+        
+        // 显示模态框
+        this.overlay.classList.add('active');
+        
+        // 自动聚焦第一个输入框
+        setTimeout(() => {
+            const firstInput = this.body.querySelector('input, select, textarea');
+            if (firstInput) firstInput.focus();
+        }, 100);
+    },
+    
+    close() {
+        this.overlay.classList.remove('active');
+        this.currentCallback = null;
+    },
+    
+    // 表单模态框
+    form(options) {
+        const fields = options.fields || [];
+        const formHTML = fields.map(field => {
+            const required = field.required ? '<span class="required">*</span>' : '';
+            const value = field.value || '';
+            
+            let inputHTML = '';
+            if (field.type === 'select') {
+                const optionsHTML = field.options.map(opt => 
+                    `<option value="${opt.value}" ${opt.value === value ? 'selected' : ''}>${opt.label}</option>`
+                ).join('');
+                inputHTML = `<select id="${field.id}" name="${field.name}">${optionsHTML}</select>`;
+            } else if (field.type === 'textarea') {
+                inputHTML = `<textarea id="${field.id}" name="${field.name}" ${field.required ? 'required' : ''}>${value}</textarea>`;
+            } else {
+                inputHTML = `<input type="${field.type || 'text'}" id="${field.id}" name="${field.name}" value="${value}" ${field.required ? 'required' : ''}>`;
+            }
+            
+            return `
+                <div class="form-group">
+                    <label for="${field.id}">${field.label}${required}</label>
+                    ${inputHTML}
+                    <div class="error-message" id="${field.id}-error"></div>
+                </div>
+            `;
+        }).join('');
+        
+        this.open({
+            title: options.title,
+            content: formHTML,
+            submitText: options.submitText || '提交',
+            submitClass: options.submitClass || 'btn-accent',
+            onSubmit: () => {
+                // 收集表单数据
+                const formData = {};
+                let isValid = true;
+                
+                fields.forEach(field => {
+                    const input = document.getElementById(field.id);
+                    const value = input.value.trim();
+                    
+                    // 验证必填项
+                    if (field.required && !value) {
+                        isValid = false;
+                        input.parentElement.classList.add('error');
+                        const errorEl = document.getElementById(`${field.id}-error`);
+                        errorEl.textContent = `${field.label}不能为空`;
+                        errorEl.classList.add('show');
+                    } else {
+                        input.parentElement.classList.remove('error');
+                        const errorEl = document.getElementById(`${field.id}-error`);
+                        errorEl.classList.remove('show');
+                    }
+                    
+                    formData[field.name] = value;
+                });
+                
+                if (!isValid) {
+                    return false; // 阻止关闭模态框
+                }
+                
+                // 调用回调
+                if (options.onSubmit) {
+                    options.onSubmit(formData);
+                }
+            }
+        });
+    },
+    
+    // 确认对话框
+    confirm(options) {
+        this.open({
+            title: options.title || '确认',
+            content: `<p style="font-size: 1.1rem; line-height: 1.6;">${options.message}</p>`,
+            submitText: options.submitText || '确定',
+            cancelText: options.cancelText || '取消',
+            submitClass: options.danger ? 'btn-danger' : 'btn-accent',
+            onSubmit: options.onConfirm
+        });
+    }
+};
+
 // 页面切换逻辑
 document.addEventListener('DOMContentLoaded', function () {
+    // 初始化模态框
+    Modal.init();
     const menuItems = document.querySelectorAll('.menu-item');
     const submenuItems = document.querySelectorAll('.submenu-item');
 
@@ -78,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="card-header">
                             <div class="card-title">课程信息管理</div>
                             <button class="btn btn-accent" onclick="addCourse()">➕ 添加课程</button>
-                            <button class="btn" onclick="alert('课程管理功能已激活！\\n\\n您可以：\\n1. 点击【添加课程】按钮添加新课程\\n2. 点击【编辑】按钮修改课程\\n3. 点击【删除】按钮删除课程')">ℹ️ 功能说明</button>
+                            <button class="btn" onclick="location.reload()">🔄 刷新</button>
                         </div>
                         <div class="card-body">
                             <div class="table-container">
@@ -130,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="card-header">
                             <div class="card-title">教师信息管理</div>
                             <button class="btn btn-accent" onclick="addTeacher()">➕ 添加教师</button>
-                            <button class="btn" onclick="alert('教师管理功能已激活！\\n\\n您可以：\\n1. 点击【添加教师】按钮添加新教师\\n2. 点击【编辑】按钮修改教师信息\\n3. 点击【删除】按钮删除教师')">ℹ️ 功能说明</button>
+                            <button class="btn" onclick="location.reload()">🔄 刷新</button>
                         </div>
                         <div class="card-body">
                             <div class="table-container">
@@ -181,24 +404,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="card">
                         <div class="card-header">
                             <div class="card-title">学生信息管理</div>
-                            <button class="btn btn-accent" onclick="addStudent()">添加学生</button>
-                            <button class="btn" onclick="loadStudents()">刷新</button>
+                            <button class="btn btn-accent" onclick="addStudent()">➕ 添加学生</button>
+                            <button class="btn" onclick="loadStudents()">🔄 刷新</button>
                         </div>
                         <div class="card-body">
                             <div class="table-container">
                                 <table>
                                     <thead>
                                         <tr>
-                                            <th>学生ID</th>
                                             <th>学号</th>
+                                            <th>姓名</th>
                                             <th>班级</th>
-                                            <th>用户ID</th>
                                             <th>操作</th>
                                         </tr>
                                     </thead>
                                     <tbody id="student-table-body">
                                         <tr>
-                                            <td colspan="5" style="text-align: center;">加载中...</td>
+                                            <td colspan="4" style="text-align: center;">加载中...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -320,104 +542,154 @@ async function loadStudents() {
     const tbody = document.getElementById('student-table-body');
     if (!tbody) return;
     
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">加载中...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">加载中...</td></tr>';
     
     try {
         const students = await StudentAPI.getAll();
         
         if (students.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无学生数据</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">暂无学生数据</td></tr>';
             return;
         }
         
         tbody.innerHTML = students.map(student => `
             <tr>
-                <td>${student.studentId}</td>
-                <td>${student.studentNumber}</td>
-                <td>${student.className}</td>
-                <td>${student.userId}</td>
+                <td>${student.studentNumber || '-'}</td>
+                <td>${student.studentName}</td>
+                <td>${student.className || '-'}</td>
                 <td>
                     <div class="btn-group">
-                        <button class="btn" onclick="editStudent(${student.studentId})">编辑</button>
-                        <button class="btn btn-danger" onclick="deleteStudent(${student.studentId})">删除</button>
+                        <button class="btn" onclick="editStudent(${student.studentId})">✏️ 编辑</button>
+                        <button class="btn btn-danger" onclick="deleteStudent(${student.studentId})">🗑️ 删除</button>
                     </div>
                 </td>
             </tr>
         `).join('');
     } catch (error) {
         console.error('加载学生失败:', error);
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">加载失败，请检查后端服务</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">加载失败，请检查后端服务</td></tr>';
     }
 }
 
 // 添加学生
 function addStudent() {
-    const studentNumber = prompt('请输入学号:');
-    if (!studentNumber) return;
-    
-    const className = prompt('请输入班级:');
-    if (!className) return;
-    
-    const userId = prompt('请输入用户ID:');
-    if (!userId) return;
-    
-    const student = {
-        studentNumber: studentNumber,
-        className: className,
-        userId: parseInt(userId)
-    };
-    
-    StudentAPI.create(student)
-        .then(() => {
-            alert('添加成功！');
-            loadStudents();
-        })
-        .catch(error => {
-            console.error('添加失败:', error);
-            alert('添加失败，学号可能已存在');
-        });
+    Modal.form({
+        title: '➕ 添加学生',
+        fields: [
+            { id: 'studentName', name: 'studentName', label: '姓名', type: 'text', required: true },
+            { id: 'className', name: 'className', label: '班级', type: 'text', required: false },
+            { id: 'phoneNumber', name: 'phoneNumber', label: '手机号', type: 'tel', required: false },
+            { id: 'email', name: 'email', label: '邮箱', type: 'email', required: false }
+        ],
+        submitText: '添加',
+        onSubmit: (formData) => {
+            // 自动生成学号、用户名、密码
+            const studentNumber = Generator.generateStudentNumber();
+            const username = Generator.generateUsername(studentNumber);
+            const password = Generator.generatePassword();
+            
+            // 创建用户账号数据
+            const userData = Generator.createUserData({
+                username: username,
+                password: password,
+                realName: formData.studentName,
+                phoneNumber: formData.phoneNumber,
+                email: formData.email,
+                roleId: 3 // 学生角色
+            });
+            
+            // 先创建用户账号
+            UserAPI.create(userData)
+                .then(newUser => {
+                    // 创建学生记录
+                    const student = {
+                        studentNumber: studentNumber,
+                        studentName: formData.studentName,
+                        className: formData.className,
+                        userId: newUser.userId
+                    };
+                    
+                    return StudentAPI.create(student);
+                })
+                .then(() => {
+                    // 显示账号信息
+                    const accountInfo = Generator.showAccountInfo('student', studentNumber, username, password);
+                    Modal.open({
+                        title: '✅ 学生添加成功',
+                        content: accountInfo,
+                        showFooter: true,
+                        submitText: '知道了',
+                        cancelText: '复制账号信息',
+                        onSubmit: () => {
+                            loadStudents();
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('添加失败:', error);
+                    showToast('添加失败：' + (error.message || '未知错误'), 'error');
+                });
+        }
+    });
 }
 
 // 编辑学生
 function editStudent(id) {
     StudentAPI.getById(id)
         .then(student => {
-            const className = prompt('请输入新的班级:', student.className);
-            if (className === null) return;
-            
-            const updatedStudent = {
-                studentNumber: student.studentNumber,
-                className: className,
-                userId: student.userId
-            };
-            
-            return StudentAPI.update(id, updatedStudent);
-        })
-        .then(() => {
-            alert('更新成功！');
-            loadStudents();
+            Modal.form({
+                title: '✏️ 编辑学生信息',
+                fields: [
+                    { id: 'studentNumber', name: 'studentNumber', label: '学号', type: 'text', value: student.studentNumber, required: true },
+                    { id: 'studentName', name: 'studentName', label: '姓名', type: 'text', value: student.studentName, required: true },
+                    { id: 'className', name: 'className', label: '班级', type: 'text', value: student.className, required: false }
+                ],
+                submitText: '保存',
+                onSubmit: (formData) => {
+                    const updatedStudent = {
+                        studentNumber: formData.studentNumber,
+                        studentName: formData.studentName,
+                        className: formData.className,
+                        userId: student.userId // 保持原有的用户ID，不允许修改
+                    };
+                    
+                    StudentAPI.update(id, updatedStudent)
+                        .then(() => {
+                            showToast('学生信息更新成功！', 'success');
+                            loadStudents();
+                        })
+                        .catch(error => {
+                            console.error('更新失败:', error);
+                            showToast('更新失败，请重试', 'error');
+                        });
+                }
+            });
         })
         .catch(error => {
-            console.error('更新失败:', error);
-            alert('更新失败');
+            console.error('获取学生信息失败:', error);
+            showToast('获取学生信息失败', 'error');
         });
 }
 
 // 删除学生
 function deleteStudent(id) {
-    if (!confirm('确定要删除这个学生吗？')) {
-        return;
-    }
-    
-    StudentAPI.delete(id)
-        .then(() => {
-            alert('删除成功！');
-            loadStudents();
-        })
-        .catch(error => {
-            console.error('删除失败:', error);
-            alert('删除失败');
-        });
+    Modal.confirm({
+        title: '⚠️ 确认删除',
+        message: '确定要删除这个学生吗？此操作不可撤销。',
+        submitText: '删除',
+        danger: true,
+        onConfirm: () => {
+            StudentAPI.delete(id)
+                .then(() => {
+                    showToast('学生删除成功！', 'success');
+                    loadStudents();
+                })
+                .catch(error => {
+                    console.error('删除失败:', error);
+                    showToast('删除失败，请重试', 'error');
+                });
+        }
+    });
 }
 
 // ========== 角色管理功能 ==========
@@ -451,175 +723,238 @@ function showConfirm(message) {
 
 // 添加课程
 function addCourse() {
-    const courseCode = prompt('请输入课程编号（例如：C003）:');
-    if (!courseCode) return;
-    
-    const courseName = prompt('请输入课程名称:');
-    if (!courseName) return;
-    
-    const teacher = prompt('请输入授课教师:');
-    if (!teacher) return;
-    
-    const credits = prompt('请输入学分:');
-    if (!credits) return;
-    
-    // 添加到表格
     const tbody = document.getElementById('course-table-body');
     if (!tbody) {
-        alert('请先打开课程管理页面！');
+        showToast('请先打开课程管理页面！', 'warning');
         return;
     }
     
-    const newRow = document.createElement('tr');
-    newRow.innerHTML = `
-        <td>${courseCode}</td>
-        <td>${courseName}</td>
-        <td>${teacher}</td>
-        <td>${credits}</td>
-        <td>
-            <div class="btn-group">
-                <button class="btn" onclick="editCourse('${courseCode}', '${courseName}', '${teacher}', ${credits})">✏️ 编辑</button>
-                <button class="btn btn-danger" onclick="deleteCourse('${courseCode}', '${courseName}')">🗑️ 删除</button>
-            </div>
-        </td>
-    `;
-    tbody.appendChild(newRow);
-    
-    alert(`✅ 课程添加成功！\n\n课程编号：${courseCode}\n课程名称：${courseName}\n授课教师：${teacher}\n学分：${credits}`);
+    Modal.form({
+        title: '➕ 添加课程',
+        fields: [
+            { id: 'courseCode', name: 'courseCode', label: '课程编号', type: 'text', required: true },
+            { id: 'courseName', name: 'courseName', label: '课程名称', type: 'text', required: true },
+            { id: 'teacher', name: 'teacher', label: '授课教师', type: 'text', required: true },
+            { id: 'credits', name: 'credits', label: '学分', type: 'number', required: true }
+        ],
+        submitText: '添加',
+        onSubmit: (formData) => {
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${formData.courseCode}</td>
+                <td>${formData.courseName}</td>
+                <td>${formData.teacher}</td>
+                <td>${formData.credits}</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn" onclick="editCourse('${formData.courseCode}', '${formData.courseName}', '${formData.teacher}', ${formData.credits})">✏️ 编辑</button>
+                        <button class="btn btn-danger" onclick="deleteCourse('${formData.courseCode}', '${formData.courseName}')">🗑️ 删除</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(newRow);
+            showToast('课程添加成功！', 'success');
+        }
+    });
 }
 
 // 编辑课程
 function editCourse(courseCode, courseName, teacher, credits) {
-    const newCourseName = prompt('请输入新的课程名称:', courseName);
-    if (newCourseName === null) return;
-    
-    const newTeacher = prompt('请输入新的授课教师:', teacher);
-    if (newTeacher === null) return;
-    
-    const newCredits = prompt('请输入新的学分:', credits);
-    if (newCredits === null) return;
-    
-    // 查找并更新对应的行
-    const tbody = document.getElementById('course-table-body');
-    const rows = tbody.getElementsByTagName('tr');
-    
-    for (let row of rows) {
-        const cells = row.getElementsByTagName('td');
-        if (cells[0].textContent === courseCode) {
-            cells[1].textContent = newCourseName;
-            cells[2].textContent = newTeacher;
-            cells[3].textContent = newCredits;
-            // 更新按钮的参数
-            const editBtn = cells[4].querySelector('.btn');
-            editBtn.onclick = function() { editCourse(courseCode, newCourseName, newTeacher, newCredits); };
-            break;
+    Modal.form({
+        title: '✏️ 编辑课程信息',
+        fields: [
+            { id: 'courseCode', name: 'courseCode', label: '课程编号', type: 'text', value: courseCode, required: true },
+            { id: 'courseName', name: 'courseName', label: '课程名称', type: 'text', value: courseName, required: true },
+            { id: 'teacher', name: 'teacher', label: '授课教师', type: 'text', value: teacher, required: true },
+            { id: 'credits', name: 'credits', label: '学分', type: 'number', value: credits, required: true }
+        ],
+        submitText: '保存',
+        onSubmit: (formData) => {
+            // 查找并更新对应的行
+            const tbody = document.getElementById('course-table-body');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            for (let row of rows) {
+                const cells = row.getElementsByTagName('td');
+                if (cells[0].textContent === courseCode) {
+                    cells[0].textContent = formData.courseCode;
+                    cells[1].textContent = formData.courseName;
+                    cells[2].textContent = formData.teacher;
+                    cells[3].textContent = formData.credits;
+                    // 更新按钮的参数
+                    const editBtn = cells[4].querySelector('.btn');
+                    editBtn.onclick = function() { editCourse(formData.courseCode, formData.courseName, formData.teacher, formData.credits); };
+                    break;
+                }
+            }
+            
+            showToast('课程信息更新成功！', 'success');
         }
-    }
-    
-    alert(`✅ 课程更新成功！\n\n课程编号：${courseCode}\n新课程名称：${newCourseName}\n新授课教师：${newTeacher}\n新学分：${newCredits}`);
+    });
 }
 
 // 删除课程
 function deleteCourse(courseCode, courseName) {
-    if (!confirm(`确定要删除课程吗？\n\n课程编号：${courseCode}\n课程名称：${courseName}`)) {
-        return;
-    }
-    
-    const tbody = document.getElementById('course-table-body');
-    const rows = tbody.getElementsByTagName('tr');
-    
-    for (let i = 0; i < rows.length; i++) {
-        const cells = rows[i].getElementsByTagName('td');
-        if (cells[0].textContent === courseCode) {
-            tbody.removeChild(rows[i]);
-            alert(`✅ 课程删除成功！\n\n已删除课程：${courseName}（${courseCode}）`);
-            return;
+    Modal.confirm({
+        title: '⚠️ 确认删除课程',
+        message: `确定要删除课程吗？<br><br><strong>课程编号：</strong>${courseCode}<br><strong>课程名称：</strong>${courseName}<br><br>此操作不可撤销。`,
+        submitText: '删除',
+        danger: true,
+        onConfirm: () => {
+            const tbody = document.getElementById('course-table-body');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                if (cells[0].textContent === courseCode) {
+                    tbody.removeChild(rows[i]);
+                    showToast(`课程 ${courseName} 删除成功！`, 'success');
+                    return;
+                }
+            }
         }
-    }
+    });
 }
 
 // ========== 教师管理功能 ==========
 
 // 添加教师
 function addTeacher() {
-    const teacherId = prompt('请输入教师工号（例如：T003）:');
-    if (!teacherId) return;
-    
-    const teacherName = prompt('请输入教师姓名:');
-    if (!teacherName) return;
-    
-    const title = prompt('请输入职称（例如：讲师/副教授/教授）:');
-    if (!title) return;
-    
-    const department = prompt('请输入所属院系:');
-    if (!department) return;
-    
     const tbody = document.getElementById('teacher-table-body');
     if (!tbody) {
-        alert('请先打开教师管理页面！');
+        showToast('请先打开教师管理页面！', 'warning');
         return;
     }
     
-    const newRow = document.createElement('tr');
-    newRow.innerHTML = `
-        <td>${teacherId}</td>
-        <td>${teacherName}</td>
-        <td>${title}</td>
-        <td>${department}</td>
-        <td>
-            <div class="btn-group">
-                <button class="btn" onclick="editTeacher('${teacherId}', '${teacherName}', '${title}', '${department}')">✏️ 编辑</button>
-                <button class="btn btn-danger" onclick="deleteTeacher('${teacherId}', '${teacherName}')">🗑️ 删除</button>
-            </div>
-        </td>
-    `;
-    tbody.appendChild(newRow);
-    
-    alert(`✅ 教师添加成功！\n\n工号：${teacherId}\n姓名：${teacherName}\n职称：${title}\n院系：${department}`);
+    Modal.form({
+        title: '➕ 添加教师',
+        fields: [
+            { id: 'teacherName', name: 'teacherName', label: '教师姓名', type: 'text', required: true },
+            { id: 'title', name: 'title', label: '职称', type: 'select', required: true, 
+              options: [
+                  { value: '', label: '请选择职称' },
+                  { value: '讲师', label: '讲师' },
+                  { value: '副教授', label: '副教授' },
+                  { value: '教授', label: '教授' }
+              ]
+            },
+            { id: 'department', name: 'department', label: '所属院系', type: 'text', required: true },
+            { id: 'phoneNumber', name: 'phoneNumber', label: '手机号', type: 'tel', required: false },
+            { id: 'email', name: 'email', label: '邮箱', type: 'email', required: false }
+        ],
+        submitText: '添加',
+        onSubmit: (formData) => {
+            // 自动生成工号、用户名、密码
+            const teacherNumber = Generator.generateTeacherNumber();
+            const username = Generator.generateUsername(teacherNumber);
+            const password = Generator.generatePassword();
+            
+            // 创建用户账号数据
+            const userData = Generator.createUserData({
+                username: username,
+                password: password,
+                realName: formData.teacherName,
+                phoneNumber: formData.phoneNumber,
+                email: formData.email,
+                roleId: 2 // 教师角色
+            });
+            
+            // 先创建用户账号
+            UserAPI.create(userData)
+                .then(newUser => {
+                    // 创建教师记录（这里使用静态表格，实际应该调用 TeacherAPI）
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td>${teacherNumber}</td>
+                        <td>${formData.teacherName}</td>
+                        <td>${formData.title}</td>
+                        <td>${formData.department}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn" onclick="editTeacher('${teacherNumber}', '${formData.teacherName}', '${formData.title}', '${formData.department}')">✏️ 编辑</button>
+                                <button class="btn btn-danger" onclick="deleteTeacher('${teacherNumber}', '${formData.teacherName}')">🗑️ 删除</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(newRow);
+                    
+                    // 显示账号信息
+                    const accountInfo = Generator.showAccountInfo('teacher', teacherNumber, username, password);
+                    Modal.open({
+                        title: '✅ 教师添加成功',
+                        content: accountInfo,
+                        showFooter: true,
+                        submitText: '知道了',
+                        cancelText: '复制账号信息',
+                        onSubmit: () => {
+                            // 刷新页面或重新加载数据
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('添加失败:', error);
+                    showToast('添加失败：' + (error.message || '未知错误'), 'error');
+                });
+        }
+    });
 }
 
 // 编辑教师
 function editTeacher(teacherId, teacherName, title, department) {
-    const newName = prompt('请输入新的教师姓名:', teacherName);
-    if (newName === null) return;
-    
-    const newTitle = prompt('请输入新的职称:', title);
-    if (newTitle === null) return;
-    
-    const newDepartment = prompt('请输入新的所属院系:', department);
-    if (newDepartment === null) return;
-    
-    const tbody = document.getElementById('teacher-table-body');
-    const rows = tbody.getElementsByTagName('tr');
-    
-    for (let row of rows) {
-        const cells = row.getElementsByTagName('td');
-        if (cells[0].textContent === teacherId) {
-            cells[1].textContent = newName;
-            cells[2].textContent = newTitle;
-            cells[3].textContent = newDepartment;
-            break;
+    Modal.form({
+        title: '✏️ 编辑教师信息',
+        fields: [
+            { id: 'teacherId', name: 'teacherId', label: '教师工号', type: 'text', value: teacherId, required: true },
+            { id: 'teacherName', name: 'teacherName', label: '教师姓名', type: 'text', value: teacherName, required: true },
+            { id: 'title', name: 'title', label: '职称', type: 'select', value: title, required: true,
+              options: [
+                  { value: '讲师', label: '讲师' },
+                  { value: '副教授', label: '副教授' },
+                  { value: '教授', label: '教授' }
+              ]
+            },
+            { id: 'department', name: 'department', label: '所属院系', type: 'text', value: department, required: true }
+        ],
+        submitText: '保存',
+        onSubmit: (formData) => {
+            const tbody = document.getElementById('teacher-table-body');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            for (let row of rows) {
+                const cells = row.getElementsByTagName('td');
+                if (cells[0].textContent === teacherId) {
+                    cells[0].textContent = formData.teacherId;
+                    cells[1].textContent = formData.teacherName;
+                    cells[2].textContent = formData.title;
+                    cells[3].textContent = formData.department;
+                    break;
+                }
+            }
+            
+            showToast('教师信息更新成功！', 'success');
         }
-    }
-    
-    alert(`✅ 教师信息更新成功！\n\n工号：${teacherId}\n新姓名：${newName}\n新职称：${newTitle}\n新院系：${newDepartment}`);
+    });
 }
 
 // 删除教师
 function deleteTeacher(teacherId, teacherName) {
-    if (!confirm(`确定要删除教师吗？\n\n工号：${teacherId}\n姓名：${teacherName}`)) {
-        return;
-    }
-    
-    const tbody = document.getElementById('teacher-table-body');
-    const rows = tbody.getElementsByTagName('tr');
-    
-    for (let i = 0; i < rows.length; i++) {
-        const cells = rows[i].getElementsByTagName('td');
-        if (cells[0].textContent === teacherId) {
-            tbody.removeChild(rows[i]);
-            alert(`✅ 教师删除成功！\n\n已删除教师：${teacherName}（${teacherId}）`);
-            return;
+    Modal.confirm({
+        title: '⚠️ 确认删除教师',
+        message: `确定要删除教师吗？<br><br><strong>工号：</strong>${teacherId}<br><strong>姓名：</strong>${teacherName}<br><br>此操作不可撤销。`,
+        submitText: '删除',
+        danger: true,
+        onConfirm: () => {
+            const tbody = document.getElementById('teacher-table-body');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                if (cells[0].textContent === teacherId) {
+                    tbody.removeChild(rows[i]);
+                    showToast(`教师 ${teacherName} 删除成功！`, 'success');
+                    return;
+                }
+            }
         }
-    }
+    });
 }

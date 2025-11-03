@@ -55,35 +55,3 @@ public class StudentCourseClass implements Serializable {
     public void setGradeLevel(String gradeLevel) { this.gradeLevel = gradeLevel; }
 }
 
-// 复合主键类
-class StudentCourseClassId implements Serializable {
-    private Long studentId;
-    private Long classId;
-
-    public StudentCourseClassId() {}
-
-    public StudentCourseClassId(Long studentId, Long classId) {
-        this.studentId = studentId;
-        this.classId = classId;
-    }
-
-    public Long getStudentId() { return studentId; }
-    public void setStudentId(Long studentId) { this.studentId = studentId; }
-
-    public Long getClassId() { return classId; }
-    public void setClassId(Long classId) { this.classId = classId; }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        StudentCourseClassId that = (StudentCourseClassId) o;
-        return studentId.equals(that.studentId) && classId.equals(that.classId);
-    }
-
-    @Override
-    public int hashCode() {
-        return studentId.hashCode() + classId.hashCode();
-    }
-}
-

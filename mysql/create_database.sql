@@ -114,13 +114,14 @@ CREATE TABLE `Teacher` (
 -- 8. 学生表 (Student)
 -- ============================================
 CREATE TABLE `Student` (
-    `StudentID` INT PRIMARY KEY AUTO_INCREMENT COMMENT '学生ID',
-    `StudentName` VARCHAR(50) NOT NULL COMMENT '姓名',
-    `MajorClass` VARCHAR(100) COMMENT '所属班级',
-    `UserID` INT NOT NULL COMMENT '用户ID',
-    `CreatedDate` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    UNIQUE KEY `uk_user_id` (`UserID`),
-    CONSTRAINT `fk_student_user` FOREIGN KEY (`UserID`) REFERENCES `User` (`UserID`)
+    `studentid` INT PRIMARY KEY AUTO_INCREMENT COMMENT '学生ID',
+    `student_number` VARCHAR(50) UNIQUE COMMENT '学号',
+    `student_name` VARCHAR(50) NOT NULL COMMENT '姓名',
+    `major_class` VARCHAR(100) COMMENT '所属班级',
+    `userid` INT NOT NULL COMMENT '用户ID',
+    `created_date` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY `uk_user_id` (`userid`),
+    CONSTRAINT `fk_student_user` FOREIGN KEY (`userid`) REFERENCES `User` (`UserID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学生表';
 
 -- ============================================
@@ -151,7 +152,7 @@ CREATE TABLE `StudentCourseClass` (
     `Status` TINYINT(1) DEFAULT 1 COMMENT '状态(1:正常 0:退课)',
     PRIMARY KEY (`StudentID`, `ClassID`),
     KEY `idx_class_id` (`ClassID`),
-    CONSTRAINT `fk_scc_student` FOREIGN KEY (`StudentID`) REFERENCES `Student` (`StudentID`),
+    CONSTRAINT `fk_scc_student` FOREIGN KEY (`StudentID`) REFERENCES `Student` (`studentid`),
     CONSTRAINT `fk_scc_class` FOREIGN KEY (`ClassID`) REFERENCES `CourseClass` (`ClassID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学生课程班级关联表';
 
@@ -194,7 +195,7 @@ CREATE TABLE `AttendanceRecord` (
     KEY `idx_student_id` (`StudentID`),
     KEY `idx_checkin_time` (`CheckInTime`),
     CONSTRAINT `fk_record_task` FOREIGN KEY (`TaskID`) REFERENCES `AttendanceTask` (`TaskID`),
-    CONSTRAINT `fk_record_student` FOREIGN KEY (`StudentID`) REFERENCES `Student` (`StudentID`)
+    CONSTRAINT `fk_record_student` FOREIGN KEY (`StudentID`) REFERENCES `Student` (`studentid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='考勤记录表';
 
 -- ============================================
@@ -210,6 +211,34 @@ INSERT INTO `Role` (`RoleName`, `RoleDescription`) VALUES
 -- 插入默认管理员账号 (密码: admin123，实际应用需要加密)
 INSERT INTO `User` (`Username`, `Password`, `RealName`, `PhoneNumber`, `Email`, `RoleID`) VALUES
 ('admin', 'admin123', '系统管理员', '13800138000', 'admin@example.com', 1);
+
+-- 插入测试教师账号
+INSERT INTO `User` (`Username`, `Password`, `RealName`, `PhoneNumber`, `Email`, `RoleID`) VALUES
+('teacher_zhang', 'teacher123', '张老师', '13900001001', 'zhang@example.com', 2),
+('teacher_li', 'teacher123', '李老师', '13900001002', 'li@example.com', 2);
+
+-- 插入测试学生账号
+INSERT INTO `User` (`Username`, `Password`, `RealName`, `PhoneNumber`, `Email`, `RoleID`) VALUES
+('student001', 'student123', '王小明', '13900002001', 'wangxm@example.com', 3),
+('student002', 'student123', '李华', '13900002002', 'lihua@example.com', 3),
+('student003', 'student123', '张三', '13900002003', 'zhangsan@example.com', 3),
+('student004', 'student123', '李四', '13900002004', 'lisi@example.com', 3),
+('student005', 'student123', '王五', '13900002005', 'wangwu@example.com', 3),
+('student006', 'student123', '赵六', '13900002006', 'zhaoliu@example.com', 3);
+
+-- 插入教师信息
+INSERT INTO `Teacher` (`JobTitle`, `Department`, `UserID`) VALUES
+('教授', '计算机学院', 2),
+('副教授', '计算机学院', 3);
+
+-- 插入学生信息
+INSERT INTO `Student` (`student_number`, `student_name`, `major_class`, `userid`) VALUES
+('2021001001', '王小明', '计算机2101班', 4),
+('2021001002', '李华', '计算机2101班', 5),
+('2021001003', '张三', '计算机2102班', 6),
+('2021001004', '李四', '计算机2102班', 7),
+('2021001005', '王五', '计算机2103班', 8),
+('2021001006', '赵六', '计算机2103班', 9);
 
 -- 插入功能权限数据（细粒度权限）
 INSERT INTO `Function` (`FunctionName`, `FunctionCode`, `ModuleName`, `Description`, `SortOrder`) VALUES
@@ -363,8 +392,10 @@ ORDER BY u.UserID, f.ModuleName, f.SortOrder;
 -- 视图3: 学生考勤统计视图
 CREATE VIEW `v_student_attendance_stats` AS
 SELECT 
-    s.StudentID,
-    u.RealName AS StudentName,
+    s.studentid AS StudentID,
+    s.student_number AS StudentNumber,
+    s.student_name AS StudentName,
+    s.major_class AS MajorClass,
     cc.ClassID,
     cc.ClassName,
     c.CourseName,
@@ -375,13 +406,13 @@ SELECT
     SUM(CASE WHEN ar.AttendanceResult = '缺勤' THEN 1 ELSE 0 END) AS AbsentCount,
     SUM(CASE WHEN ar.AttendanceResult = '请假' THEN 1 ELSE 0 END) AS LeaveCount
 FROM `Student` s
-JOIN `User` u ON s.UserID = u.UserID
-LEFT JOIN `StudentCourseClass` scc ON s.StudentID = scc.StudentID
+JOIN `User` u ON s.userid = u.UserID
+LEFT JOIN `StudentCourseClass` scc ON s.studentid = scc.StudentID
 LEFT JOIN `CourseClass` cc ON scc.ClassID = cc.ClassID
 LEFT JOIN `Course` c ON cc.CourseID = c.CourseID
 LEFT JOIN `AttendanceTask` at ON cc.ClassID = at.ClassID
-LEFT JOIN `AttendanceRecord` ar ON at.TaskID = ar.TaskID AND s.StudentID = ar.StudentID
-GROUP BY s.StudentID, cc.ClassID;
+LEFT JOIN `AttendanceRecord` ar ON at.TaskID = ar.TaskID AND s.studentid = ar.StudentID
+GROUP BY s.studentid, cc.ClassID;
 
 -- 完成
 SELECT '数据库创建完成！' AS Message;
