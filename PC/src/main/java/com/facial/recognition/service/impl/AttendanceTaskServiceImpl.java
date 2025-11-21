@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @Transactional
@@ -21,9 +20,9 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
 
     @Override
     public AttendanceTask createAttendanceTask(AttendanceTask attendanceTask) {
-        // 生成二维�?
-        String qrCode = generateQrCode(attendanceTask.getTaskId());
-        attendanceTask.setQrCode(qrCode);
+        // 设置创建时间
+        attendanceTask.setCreatedTime(LocalDateTime.now());
+        // 不再生成二维码
         return attendanceTaskRepository.save(attendanceTask);
     }
 
@@ -47,26 +46,8 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AttendanceTask> findByStatus(String status) {
-        return attendanceTaskRepository.findByStatus(status);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<AttendanceTask> findByCourseClassIdAndStatus(Long courseClassId, String status) {
-        return attendanceTaskRepository.findByCourseClassIdAndStatus(courseClassId, status);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<AttendanceTask> findByTeacherIdAndStatus(Long teacherId, String status) {
-        return attendanceTaskRepository.findByTeacherIdAndStatus(teacherId, status);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<AttendanceTask> findByTaskNameContaining(String taskName) {
-        return attendanceTaskRepository.findByTaskNameContaining(taskName);
+    public List<AttendanceTask> findByTaskDescriptionContaining(String description) {
+        return attendanceTaskRepository.findByDescriptionContaining(description);
     }
 
     @Override
@@ -83,12 +64,6 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<AttendanceTask> findByQrCode(String qrCode) {
-        return attendanceTaskRepository.findByQrCode(qrCode);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<AttendanceTask> findUpcomingTasks(LocalDateTime currentTime) {
         return attendanceTaskRepository.findUpcomingTasks(currentTime);
     }
@@ -98,23 +73,33 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
         Optional<AttendanceTask> existingTask = attendanceTaskRepository.findById(taskId);
         if (existingTask.isPresent()) {
             AttendanceTask updatedTask = existingTask.get();
-            updatedTask.setTaskName(attendanceTask.getTaskName());
-            updatedTask.setDescription(attendanceTask.getDescription());
-            updatedTask.setStartTime(attendanceTask.getStartTime());
-            updatedTask.setEndTime(attendanceTask.getEndTime());
-            updatedTask.setLocation(attendanceTask.getLocation());
-            updatedTask.setStatus(attendanceTask.getStatus());
+            // 更新字段
+            if (attendanceTask.getDescription() != null) {
+                updatedTask.setDescription(attendanceTask.getDescription());
+            }
+            if (attendanceTask.getStartTime() != null) {
+                updatedTask.setStartTime(attendanceTask.getStartTime());
+            }
+            if (attendanceTask.getEndTime() != null) {
+                updatedTask.setEndTime(attendanceTask.getEndTime());
+            }
+            if (attendanceTask.getLocationRange() != null) {
+                updatedTask.setLocationRange(attendanceTask.getLocationRange());
+            }
+            if (attendanceTask.getLatitude() != null) {
+                updatedTask.setLatitude(attendanceTask.getLatitude());
+            }
+            if (attendanceTask.getLongitude() != null) {
+                updatedTask.setLongitude(attendanceTask.getLongitude());
+            }
+            if (attendanceTask.getRadius() != null) {
+                updatedTask.setRadius(attendanceTask.getRadius());
+            }
+            if (attendanceTask.getIsFaceRequired() != null) {
+                updatedTask.setIsFaceRequired(attendanceTask.getIsFaceRequired());
+            }
+            
             return attendanceTaskRepository.save(updatedTask);
-        }
-        throw new RuntimeException("AttendanceTask not found with id: " + taskId);
-    }
-
-    @Override
-    public AttendanceTask updateStatus(Long taskId, String status) {
-        Optional<AttendanceTask> task = attendanceTaskRepository.findById(taskId);
-        if (task.isPresent()) {
-            task.get().setStatus(status);
-            return attendanceTaskRepository.save(task.get());
         }
         throw new RuntimeException("AttendanceTask not found with id: " + taskId);
     }
@@ -125,20 +110,12 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
     }
 
     @Override
-    public String generateQrCode(Long taskId) {
-        // 生成唯一的二维码内容
-        String qrContent = "ATTENDANCE_TASK_" + taskId + "_" + UUID.randomUUID().toString();
-        return qrContent;
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public boolean isTaskActive(Long taskId, LocalDateTime currentTime) {
         Optional<AttendanceTask> task = attendanceTaskRepository.findById(taskId);
         if (task.isPresent()) {
             AttendanceTask attendanceTask = task.get();
-            return "ACTIVE".equals(attendanceTask.getStatus()) &&
-                   currentTime.isAfter(attendanceTask.getStartTime()) &&
+            return currentTime.isAfter(attendanceTask.getStartTime()) &&
                    currentTime.isBefore(attendanceTask.getEndTime());
         }
         return false;

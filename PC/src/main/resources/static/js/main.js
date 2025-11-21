@@ -431,6 +431,82 @@ document.addEventListener('DOMContentLoaded', function () {
                 // 加载学生数据
                 setTimeout(loadStudents, 100);
                 break;
+            case 'publish-task':
+                content = `
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">发布考勤</div>
+                        </div>
+                        <div class="card-body">
+                            <form id="publish-task-form">
+                                <div class="form-group">
+                                    <label for="task-class-select">选择班级 <span class="required">*</span></label>
+                                    <select id="task-class-select" name="courseClassId" required>
+                                        <option value="">正在加载班级...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="task-name">任务名称 <span class="required">*</span></label>
+                                    <input type="text" id="task-name" name="taskName" placeholder="例如：第1周 软件工程考勤" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="task-start-time">开始时间 <span class="required">*</span></label>
+                                        <input type="datetime-local" id="task-start-time" name="startTime" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="task-end-time">结束时间 <span class="required">*</span></label>
+                                        <input type="datetime-local" id="task-end-time" name="endTime" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>考勤地点设置 <span class="required">*</span></label>
+                                    <div class="form-row" style="align-items: flex-end;">
+                                        <div class="form-group" style="flex: 2;">
+                                            <label for="location-range" style="font-size: 0.9em;">地点描述</label>
+                                            <input type="text" id="location-range" name="locationRange" placeholder="例如：一教302" required>
+                                        </div>
+                                        <div class="form-group" style="flex: 1;">
+                                            <button type="button" class="btn btn-secondary" id="btn-search-location" style="width: 100%; margin-bottom: 5px;">🔍 搜索</button>
+                                        </div>
+                                        <div class="form-group" style="flex: 1;">
+                                            <button type="button" class="btn btn-secondary" id="btn-get-location" style="width: 100%; margin-bottom: 5px;">📍 获取当前位置</button>
+                                        </div>
+                                    </div>
+                                    <!-- 地图容器 -->
+                                    <div id="map-container" style="height: 300px; width: 100%; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; display: block;"></div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group" style="display: none;">
+                                            <label for="latitude">纬度</label>
+                                            <input type="number" id="latitude" name="latitude" step="0.0000001" required>
+                                        </div>
+                                        <div class="form-group" style="display: none;">
+                                            <label for="longitude">经度</label>
+                                            <input type="number" id="longitude" name="longitude" step="0.0000001" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="radius" style="font-size: 0.9em;">有效半径(米)</label>
+                                            <input type="number" id="radius" name="radius" value="100" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 移除强制人脸识别选项，默认为1 -->
+                                <input type="hidden" id="is-face-required" name="isFaceRequired" value="1">
+
+                                <div class="form-group">
+                                    <label for="task-desc">任务描述</label>
+                                    <textarea id="task-desc" name="description" rows="3"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-accent" style="margin-top: 10px;">发布考勤</button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                setTimeout(initPublishTaskPage, 100);
+                break;
             case 'attendance':
                 content = `
                     <div class="card">
@@ -955,6 +1031,326 @@ function deleteTeacher(teacherId, teacherName) {
                     return;
                 }
             }
+        }
+    });
+}
+
+// ========== 考勤任务功能 ==========
+
+// 初始化发布考勤任务页面
+function initPublishTaskPage() {
+    const form = document.getElementById('publish-task-form');
+    const select = document.getElementById('task-class-select');
+    const btnGetLocation = document.getElementById('btn-get-location');
+    const btnSearchLocation = document.getElementById('btn-search-location');
+    
+    // 设置默认时间
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    const start = new Date(now.getTime() - offset).toISOString().slice(0, 16);
+    const end = new Date(now.getTime() + 2 * 60 * 60 * 1000 - offset).toISOString().slice(0, 16);
+    
+    const startTimeInput = document.getElementById('task-start-time');
+    const endTimeInput = document.getElementById('task-end-time');
+    
+    if (startTimeInput) startTimeInput.value = start;
+    if (endTimeInput) endTimeInput.value = end;
+
+    // 加载班级
+    CourseClassAPI.getAll().then(classes => {
+        if (!classes || classes.length === 0) {
+            select.innerHTML = '<option value="">暂无班级数据</option>';
+            return;
+        }
+        select.innerHTML = '<option value="">请选择班级</option>' + 
+            classes.map(c => `<option value="${c.classId}">${c.className} (ID:${c.classId})</option>`).join('');
+    }).catch(err => {
+        console.error(err);
+        select.innerHTML = '<option value="">加载失败</option>';
+        showToast('加载班级失败，请检查网络或后端服务', 'error');
+    });
+
+    // 初始化地图函数
+    function initMap(lat, lng) {
+        const mapContainer = document.getElementById('map-container');
+        if (!mapContainer) return;
+        
+        if (typeof L === 'undefined') {
+            mapContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">地图加载失败，请检查网络连接</div>';
+            return;
+        }
+
+        // 如果已经初始化过地图，先移除
+        if (window.currentMap) {
+            window.currentMap.remove();
+        }
+        
+        // 默认位置：如果没有提供坐标，则默认为北京
+        const defaultLat = lat || 39.9042;
+        const defaultLng = lng || 116.4074;
+        const zoomLevel = lat ? 16 : 12;
+
+        const map = L.map('map-container').setView([defaultLat, defaultLng], zoomLevel);
+        window.currentMap = map;
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        let marker;
+        if (lat && lng) {
+            marker = L.marker([lat, lng]).addTo(map);
+        }
+
+        // 地图点击事件
+        map.on('click', async function(e) {
+            const clickedLat = e.latlng.lat;
+            const clickedLng = e.latlng.lng;
+            
+            // 更新隐藏的经纬度输入框
+            document.getElementById('latitude').value = clickedLat.toFixed(7);
+            document.getElementById('longitude').value = clickedLng.toFixed(7);
+            
+            // 更新或创建标记
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+            
+            // 逆地理编码获取地址
+            try {
+                showToast('正在获取地址信息...', 'info', 1000);
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${clickedLat}&lon=${clickedLng}&zoom=18&addressdetails=1`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.display_name) {
+                        const locationRangeInput = document.getElementById('location-range');
+                        if (locationRangeInput) {
+                            // 简化地址显示
+                            let address = '';
+                            if (data.address) {
+                                // 优先显示更有意义的名称
+                                const parts = [];
+                                if (data.address.amenity) parts.push(data.address.amenity); // 设施名
+                                else if (data.address.building) parts.push(data.address.building); // 建筑名
+                                
+                                if (data.address.road) parts.push(data.address.road); // 道路
+                                if (data.address.house_number) parts.push(data.address.house_number); // 门牌
+                                
+                                if (parts.length > 0) {
+                                    address = parts.join(' ');
+                                } else {
+                                    address = data.display_name.split(',')[0]; // 回退到显示名称的第一部分
+                                }
+                            } else {
+                                address = data.display_name;
+                            }
+                            locationRangeInput.value = address;
+                            marker.bindPopup(address).openPopup();
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('逆地理编码失败:', err);
+            }
+        });
+        
+        return map;
+    }
+
+    // 页面加载完成后初始化地图（尝试获取位置，如果失败则显示默认地图）
+    setTimeout(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    document.getElementById('latitude').value = lat.toFixed(7);
+                    document.getElementById('longitude').value = lng.toFixed(7);
+                    initMap(lat, lng);
+                },
+                (error) => {
+                    console.log('无法自动获取位置，加载默认地图');
+                    initMap(); 
+                },
+                { timeout: 5000 }
+            );
+        } else {
+            initMap();
+        }
+    }, 500);
+
+    // 搜索地点功能
+    if (btnSearchLocation) {
+        btnSearchLocation.addEventListener('click', async () => {
+            const locationInput = document.getElementById('location-range');
+            const query = locationInput.value.trim();
+            
+            if (!query) {
+                showToast('请输入要搜索的地点名称', 'warning');
+                return;
+            }
+            
+            btnSearchLocation.textContent = '搜索中...';
+            btnSearchLocation.disabled = true;
+            
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        const result = data[0];
+                        const lat = parseFloat(result.lat);
+                        const lng = parseFloat(result.lon);
+                        
+                        document.getElementById('latitude').value = lat.toFixed(7);
+                        document.getElementById('longitude').value = lng.toFixed(7);
+                        
+                        // 初始化或更新地图
+                        const map = initMap(lat, lng);
+                        if (map && window.currentMap) {
+                            window.currentMap.setView([lat, lng], 16);
+                            
+                            // 查找并更新标记
+                            let markerFound = false;
+                            map.eachLayer((layer) => {
+                                if (layer instanceof L.Marker) {
+                                    layer.setLatLng([lat, lng]);
+                                    layer.bindPopup(result.display_name).openPopup();
+                                    markerFound = true;
+                                }
+                            });
+                            
+                            // 如果没有找到标记（理论上 initMap 会创建，但为了保险），这里可以补一个
+                            if (!markerFound) {
+                                const marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+                                marker.bindPopup(result.display_name).openPopup();
+                                
+                                // 绑定拖拽事件
+                                marker.on('dragend', function(e) {
+                                    const position = marker.getLatLng();
+                                    document.getElementById('latitude').value = position.lat.toFixed(7);
+                                    document.getElementById('longitude').value = position.lng.toFixed(7);
+                                });
+                            }
+                        }
+                        
+                        showToast('已定位到搜索地点', 'success');
+                    } else {
+                        showToast('未找到相关地点，请尝试更详细的描述', 'warning');
+                    }
+                } else {
+                    showToast('搜索服务暂不可用', 'error');
+                }
+            } catch (e) {
+                console.error('搜索失败:', e);
+                showToast('搜索发生错误，请检查网络', 'error');
+            } finally {
+                btnSearchLocation.textContent = '🔍 搜索';
+                btnSearchLocation.disabled = false;
+            }
+        });
+    }
+
+    // 获取位置按钮逻辑（定位到当前位置）
+    if (btnGetLocation) {
+        btnGetLocation.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                showToast('您的浏览器不支持地理位置功能', 'error');
+                return;
+            }
+            
+            btnGetLocation.textContent = '正在获取...';
+            btnGetLocation.disabled = true;
+            
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    document.getElementById('latitude').value = lat.toFixed(7);
+                    document.getElementById('longitude').value = lng.toFixed(7);
+                    
+                    // 重新初始化地图并定位
+                    initMap(lat, lng);
+                    
+                    // 自动获取地址
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data && data.display_name) {
+                                const locationRangeInput = document.getElementById('location-range');
+                                if (locationRangeInput) {
+                                    locationRangeInput.value = data.display_name.split(',')[0];
+                                }
+                            }
+                        }
+                    } catch(e) {}
+
+                    btnGetLocation.textContent = '✅ 定位成功';
+                    btnGetLocation.classList.remove('btn-secondary');
+                    btnGetLocation.classList.add('btn-success');
+                    setTimeout(() => {
+                        btnGetLocation.textContent = '📍 获取当前位置';
+                        btnGetLocation.disabled = false;
+                        btnGetLocation.classList.remove('btn-success');
+                        btnGetLocation.classList.add('btn-secondary');
+                    }, 2000);
+                },
+                (error) => {
+                    showToast('获取位置失败', 'error');
+                    btnGetLocation.textContent = '📍 获取当前位置';
+                    btnGetLocation.disabled = false;
+                }
+            );
+        });
+    }
+
+    // 处理提交
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const isFaceRequiredInput = document.getElementById('is-face-required');
+        const isFaceRequired = isFaceRequiredInput ? parseInt(isFaceRequiredInput.value) : 1;
+
+        const task = {
+            courseClassId: parseInt(formData.get('courseClassId')),
+            taskName: formData.get('taskName'),
+            startTime: formData.get('startTime'),
+            endTime: formData.get('endTime'),
+            description: formData.get('description'),
+            locationRange: formData.get('locationRange'),
+            latitude: parseFloat(formData.get('latitude')),
+            longitude: parseFloat(formData.get('longitude')),
+            radius: parseInt(formData.get('radius')),
+            isFaceRequired: isFaceRequired,
+            teacherId: 1 // 暂时硬编码教师ID
+        };
+        
+        try {
+            await AttendanceTaskAPI.create(task);
+            showToast('考勤发布成功！', 'success');
+            form.reset();
+            // 重置时间
+            if (startTimeInput) startTimeInput.value = start;
+            if (endTimeInput) endTimeInput.value = end;
+            // 重置按钮状态
+            if (btnGetLocation) {
+                btnGetLocation.textContent = '📍 获取当前位置';
+                btnGetLocation.classList.remove('btn-success');
+                btnGetLocation.classList.add('btn-secondary');
+            }
+            // 隐藏地图
+            const mapContainer = document.getElementById('map-container');
+            if (mapContainer) {
+                mapContainer.style.display = 'none';
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('发布失败：' + (err.message || '未知错误'), 'error');
         }
     });
 }

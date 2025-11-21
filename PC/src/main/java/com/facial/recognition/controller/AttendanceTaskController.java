@@ -22,9 +22,19 @@ public class AttendanceTaskController {
     @PostMapping
     public ResponseEntity<AttendanceTask> createAttendanceTask(@RequestBody AttendanceTask attendanceTask) {
         try {
+            // 如果前端传了 taskName 但没传 description，或者想把 taskName 拼接到 description
+            if (attendanceTask.getTaskName() != null && !attendanceTask.getTaskName().isEmpty()) {
+                String desc = attendanceTask.getDescription() == null ? "" : attendanceTask.getDescription();
+                // 如果 description 不包含 taskName，则拼按
+                if (!desc.contains(attendanceTask.getTaskName())) {
+                    attendanceTask.setDescription(attendanceTask.getTaskName() + (desc.isEmpty() ? "" : " - " + desc));
+                }
+            }
+            
             AttendanceTask createdTask = attendanceTaskService.createAttendanceTask(attendanceTask);
             return ResponseEntity.ok(createdTask);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().build();
         }
     }
@@ -51,35 +61,10 @@ public class AttendanceTaskController {
         return ResponseEntity.ok(tasks);
     }
 
-    // 根据状态获取考勤任务
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<AttendanceTask>> getTasksByStatus(@PathVariable String status) {
-        List<AttendanceTask> tasks = attendanceTaskService.findByStatus(status);
-        return ResponseEntity.ok(tasks);
-    }
-
-    // 根据班级ID和状态获取考勤任务
-    @GetMapping("/class/{courseClassId}/status/{status}")
-    public ResponseEntity<List<AttendanceTask>> getTasksByClassAndStatus(
-            @PathVariable Long courseClassId, @PathVariable String status) {
-        List<AttendanceTask> tasks = attendanceTaskService
-            .findByCourseClassIdAndStatus(courseClassId, status);
-        return ResponseEntity.ok(tasks);
-    }
-
-    // 根据教师ID和状态获取考勤任务
-    @GetMapping("/teacher/{teacherId}/status/{status}")
-    public ResponseEntity<List<AttendanceTask>> getTasksByTeacherAndStatus(
-            @PathVariable Long teacherId, @PathVariable String status) {
-        List<AttendanceTask> tasks = attendanceTaskService
-            .findByTeacherIdAndStatus(teacherId, status);
-        return ResponseEntity.ok(tasks);
-    }
-
-    // 根据任务名称搜索考勤任务
+    // 根据描述搜索考勤任务
     @GetMapping("/search")
-    public ResponseEntity<List<AttendanceTask>> searchTasksByName(@RequestParam String taskName) {
-        List<AttendanceTask> tasks = attendanceTaskService.findByTaskNameContaining(taskName);
+    public ResponseEntity<List<AttendanceTask>> searchTasksByDescription(@RequestParam String description) {
+        List<AttendanceTask> tasks = attendanceTaskService.findByTaskDescriptionContaining(description);
         return ResponseEntity.ok(tasks);
     }
 
@@ -105,14 +90,6 @@ public class AttendanceTaskController {
         return ResponseEntity.ok(tasks);
     }
 
-    // 根据二维码获取考勤任务
-    @GetMapping("/qr/{qrCode}")
-    public ResponseEntity<AttendanceTask> getTaskByQrCode(@PathVariable String qrCode) {
-        Optional<AttendanceTask> task = attendanceTaskService.findByQrCode(qrCode);
-        return task.map(ResponseEntity::ok)
-                  .orElse(ResponseEntity.notFound().build());
-    }
-
     // 获取即将开始的考勤任务
     @GetMapping("/upcoming")
     public ResponseEntity<List<AttendanceTask>> getUpcomingTasks() {
@@ -133,35 +110,12 @@ public class AttendanceTaskController {
         }
     }
 
-    // 更新考勤任务状态
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<AttendanceTask> updateTaskStatus(
-            @PathVariable Long id, @RequestParam String status) {
-        try {
-            AttendanceTask task = attendanceTaskService.updateStatus(id, status);
-            return ResponseEntity.ok(task);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
     // 删除考勤任务
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAttendanceTask(@PathVariable Long id) {
         try {
             attendanceTaskService.deleteAttendanceTask(id);
             return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    // 生成二维码
-    @PostMapping("/{id}/qr-code")
-    public ResponseEntity<String> generateQrCode(@PathVariable Long id) {
-        try {
-            String qrCode = attendanceTaskService.generateQrCode(id);
-            return ResponseEntity.ok(qrCode);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
@@ -183,4 +137,3 @@ public class AttendanceTaskController {
         return ResponseEntity.ok(isExpired);
     }
 }
-

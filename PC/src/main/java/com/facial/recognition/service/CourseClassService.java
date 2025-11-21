@@ -17,7 +17,7 @@ public interface CourseClassService {
     // 根据班级名称查找班级
     List<CourseClass> findByClassName(String className);
     
-    // 获取所有班�?
+    // 获取所有班级
     List<CourseClass> findAll();
     
     // 根据课程ID查找班级
@@ -25,9 +25,6 @@ public interface CourseClassService {
     
     // 根据教师ID查找班级
     List<CourseClass> findByTeacherId(Long teacherId);
-    
-    // 根据状态查找班�?
-    List<CourseClass> findByStatus(String status);
     
     // 根据课程ID和教师ID查找班级
     List<CourseClass> findByCourseIdAndTeacherId(Long courseId, Long teacherId);
@@ -37,19 +34,4 @@ public interface CourseClassService {
     
     // 删除班级
     void deleteCourseClass(Long courseClassId);
-    
-    // 更新班级状�?
-    CourseClass updateStatus(Long courseClassId, String status);
-    
-    // 更新班级学生数量
-    CourseClass updateStudentCount(Long courseClassId, Integer currentStudents);
-    
-    // 查找指定时间范围内的班级
-    List<CourseClass> findClassesInDateRange(LocalDateTime startDate, LocalDateTime endDate);
-    
-    // 检查班级是否已�?
-    boolean isClassFull(Long courseClassId);
-    
-    // 获取班级可用座位�?
-    Integer getAvailableSeats(Long courseClassId);
 }

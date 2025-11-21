@@ -16,34 +16,28 @@ public interface AttendanceTaskRepository extends JpaRepository<AttendanceTask, 
     // 根据班级ID查找考勤任务
     List<AttendanceTask> findByCourseClassId(Long courseClassId);
     
-    // 根据教师ID查找考勤任务
-    List<AttendanceTask> findByTeacherId(Long teacherId);
+    // 注意：TeacherID 在 AttendanceTask 表中不存在，需要关联 CourseClass 表查询
+    // 这里简化处理，如果需要根据 TeacherID 查，建议在 Service 层先查 CourseClass ID 列表再查 Task
+    // 或者使用 @Query 关联查询
+    @Query("SELECT at FROM AttendanceTask at WHERE at.courseClassId IN (SELECT cc.classId FROM CourseClass cc WHERE cc.teacherId = :teacherId)")
+    List<AttendanceTask> findByTeacherId(@Param("teacherId") Long teacherId);
     
-    // 根据状态查找考勤任务
-    List<AttendanceTask> findByStatus(String status);
+    // 状态相关的查询需要改为基于时间判断，或者在应用层过滤
+    // 这里暂时移除 findByStatus 等方法，改为提供基于时间的查询
     
-    // 根据班级ID和状态查找考勤任务
-    List<AttendanceTask> findByCourseClassIdAndStatus(Long courseClassId, String status);
-    
-    // 根据教师ID和状态查找考勤任务
-    List<AttendanceTask> findByTeacherIdAndStatus(Long teacherId, String status);
-    
-    // 根据任务名称查找考勤任务
-    List<AttendanceTask> findByTaskNameContaining(String taskName);
+    // 根据任务描述模糊查找
+    List<AttendanceTask> findByDescriptionContaining(String description);
     
     // 查找指定时间范围内的考勤任务
     @Query("SELECT at FROM AttendanceTask at WHERE at.startTime <= :endTime AND at.endTime >= :startTime")
     List<AttendanceTask> findTasksInTimeRange(@Param("startTime") LocalDateTime startTime, 
                                             @Param("endTime") LocalDateTime endTime);
     
-    // 查找当前活跃的考勤任务
-    @Query("SELECT at FROM AttendanceTask at WHERE at.status = 'ACTIVE' AND at.startTime <= :currentTime AND at.endTime >= :currentTime")
+    // 查找当前活跃的考勤任务 (根据时间判断)
+    @Query("SELECT at FROM AttendanceTask at WHERE at.startTime <= :currentTime AND at.endTime >= :currentTime")
     List<AttendanceTask> findActiveTasksAtTime(@Param("currentTime") LocalDateTime currentTime);
     
-    // 根据二维码查找考勤任务
-    Optional<AttendanceTask> findByQrCode(String qrCode);
-    
     // 查找即将开始的考勤任务
-    @Query("SELECT at FROM AttendanceTask at WHERE at.status = 'ACTIVE' AND at.startTime > :currentTime ORDER BY at.startTime ASC")
+    @Query("SELECT at FROM AttendanceTask at WHERE at.startTime > :currentTime ORDER BY at.startTime ASC")
     List<AttendanceTask> findUpcomingTasks(@Param("currentTime") LocalDateTime currentTime);
 }

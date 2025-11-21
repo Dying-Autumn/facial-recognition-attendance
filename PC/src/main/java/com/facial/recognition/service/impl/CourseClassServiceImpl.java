@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,12 +54,6 @@ public class CourseClassServiceImpl implements CourseClassService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CourseClass> findByStatus(String status) {
-        return courseClassRepository.findByStatus(status);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<CourseClass> findByCourseIdAndTeacherId(Long courseId, Long teacherId) {
         return courseClassRepository.findByCourseIdAndTeacherId(courseId, teacherId);
     }
@@ -75,10 +68,7 @@ public class CourseClassServiceImpl implements CourseClassService {
             updatedClass.setTeacherId(courseClass.getTeacherId());
             updatedClass.setClassroom(courseClass.getClassroom());
             updatedClass.setSchedule(courseClass.getSchedule());
-            updatedClass.setMaxStudents(courseClass.getMaxStudents());
-            updatedClass.setStartDate(courseClass.getStartDate());
-            updatedClass.setEndDate(courseClass.getEndDate());
-            updatedClass.setStatus(courseClass.getStatus());
+            // transient fields are not updated
             return courseClassRepository.save(updatedClass);
         }
         throw new RuntimeException("CourseClass not found with id: " + courseClassId);
@@ -87,57 +77,5 @@ public class CourseClassServiceImpl implements CourseClassService {
     @Override
     public void deleteCourseClass(Long courseClassId) {
         courseClassRepository.deleteById(courseClassId);
-    }
-
-    @Override
-    public CourseClass updateStatus(Long courseClassId, String status) {
-        Optional<CourseClass> courseClass = courseClassRepository.findById(courseClassId);
-        if (courseClass.isPresent()) {
-            courseClass.get().setStatus(status);
-            return courseClassRepository.save(courseClass.get());
-        }
-        throw new RuntimeException("CourseClass not found with id: " + courseClassId);
-    }
-
-    @Override
-    public CourseClass updateStudentCount(Long courseClassId, Integer currentStudents) {
-        Optional<CourseClass> courseClass = courseClassRepository.findById(courseClassId);
-        if (courseClass.isPresent()) {
-            courseClass.get().setCurrentStudents(currentStudents);
-            return courseClassRepository.save(courseClass.get());
-        }
-        throw new RuntimeException("CourseClass not found with id: " + courseClassId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CourseClass> findClassesInDateRange(LocalDateTime startDate, LocalDateTime endDate) {
-        return courseClassRepository.findClassesInDateRange(startDate, endDate);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean isClassFull(Long courseClassId) {
-        Optional<CourseClass> courseClass = courseClassRepository.findById(courseClassId);
-        if (courseClass.isPresent()) {
-            Integer maxStudents = courseClass.get().getMaxStudents();
-            Integer currentStudents = courseClass.get().getCurrentStudents();
-            return maxStudents != null && currentStudents != null && currentStudents >= maxStudents;
-        }
-        return false;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Integer getAvailableSeats(Long courseClassId) {
-        Optional<CourseClass> courseClass = courseClassRepository.findById(courseClassId);
-        if (courseClass.isPresent()) {
-            Integer maxStudents = courseClass.get().getMaxStudents();
-            Integer currentStudents = courseClass.get().getCurrentStudents();
-            if (maxStudents != null && currentStudents != null) {
-                return maxStudents - currentStudents;
-            }
-        }
-        return 0;
     }
 }

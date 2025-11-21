@@ -4,14 +4,14 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "course_classes")
+@Table(name = "CourseClass")
 public class CourseClass {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ClassID")
     private Long classId; // 主键
 
-    @Column(name = "class_name", nullable = false)
+    @Column(name = "ClassName", nullable = false)
     private String className; // 班级名称/代号
 
     @Column(name = "CourseID", nullable = false)
@@ -20,21 +20,29 @@ public class CourseClass {
     @Column(name = "TeacherID", nullable = false)
     private Long teacherId; // 外键
 
-    private String classroom; // 教室
+    @Column(name = "ClassLocation")
+    private String classroom; // 教室 (对应数据库 ClassLocation)
 
-    private String schedule; // 上课时间安排
+    @Column(name = "ClassTime")
+    private String schedule; // 上课时间安排 (对应数据库 ClassTime)
 
+    @Transient // 数据库中可能没有这个字段，或者需要核对 create_database.sql
     private Integer maxStudents; // 最大学生数
 
+    @Transient // 数据库中可能没有这个字段
     private Integer currentStudents; // 当前学生数
 
-    @Column(name = "start_date")
+    @Transient // 数据库中可能没有这个字段
     private LocalDateTime startDate; // 开课时间
 
-    @Column(name = "end_date")
+    @Transient // 数据库中可能没有这个字段
     private LocalDateTime endDate; // 结课时间
 
+    @Transient // 数据库中可能没有这个字段
     private String status; // 状态：ACTIVE, INACTIVE, COMPLETED
+    
+    @Column(name = "Semester")
+    private String semester; // 学期
 
     public CourseClass() {}
 
@@ -42,8 +50,7 @@ public class CourseClass {
         this.className = className;
         this.courseId = courseId;
         this.teacherId = teacherId;
-        this.currentStudents = 0;
-        this.status = "ACTIVE";
+        // this.status = "ACTIVE";
     }
 
     // Getters and Setters
@@ -79,5 +86,7 @@ public class CourseClass {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-}
 
+    public String getSemester() { return semester; }
+    public void setSemester(String semester) { this.semester = semester; }
+}

@@ -1,7 +1,9 @@
 package com.facial.recognition.service.impl;
 
 import com.facial.recognition.pojo.Student;
+import com.facial.recognition.pojo.User;
 import com.facial.recognition.repository.StudentRepository;
+import com.facial.recognition.repository.UserRepository;
 import com.facial.recognition.service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,7 +18,10 @@ import java.util.Optional;
 public class StudentServiceImpl implements StudentService {
     
     @Autowired
-    private StudentRepository studentRepository;@Override
+    private StudentRepository studentRepository;
+    
+    @Autowired
+    private UserRepository userRepository;@Override
     public Student createStudent(Student student) {
         // 妫€鏌ュ鍙锋槸鍚﹀凡瀛樺湪
         studentRepository.findByStudentNumber(student.getStudentNumber())
@@ -39,7 +44,13 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional(readOnly = true)
     public Optional<Student> findByStudentNumber(String studentNumber) {
-        return studentRepository.findByStudentNumber(studentNumber);
+        Optional<Student> student = studentRepository.findByStudentNumber(studentNumber);
+        if (student.isPresent()) {
+            return student;
+        }
+        // 尝试通过用户名查找对应的学生信息
+        return userRepository.findByUserName(studentNumber)
+                .flatMap(user -> studentRepository.findByUserId(user.getUserID()));
     }
 
     @Override

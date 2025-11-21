@@ -17,4 +17,10 @@ public interface IUserService {
     
     // 根据用户名获取用户
     Optional<User> findByUsername(String username);
+    
+    // 保存用户（新增或更新）
+    User save(User user);
+    
+    // 删除用户
+    void delete(Integer id);
 }

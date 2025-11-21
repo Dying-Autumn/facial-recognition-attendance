@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +24,7 @@ public class CourseClassController {
             CourseClass createdClass = courseClassService.createCourseClass(courseClass);
             return ResponseEntity.ok(createdClass);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().build();
         }
     }
@@ -65,13 +65,6 @@ public class CourseClassController {
         return ResponseEntity.ok(courseClasses);
     }
 
-    // 根据状态获取班级
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<CourseClass>> getCourseClassesByStatus(@PathVariable String status) {
-        List<CourseClass> courseClasses = courseClassService.findByStatus(status);
-        return ResponseEntity.ok(courseClasses);
-    }
-
     // 根据课程ID和教师ID获取班级
     @GetMapping("/course/{courseId}/teacher/{teacherId}")
     public ResponseEntity<List<CourseClass>> getCourseClassesByCourseAndTeacher(
@@ -92,30 +85,6 @@ public class CourseClassController {
         }
     }
 
-    // 更新班级状态
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<CourseClass> updateCourseClassStatus(
-            @PathVariable Long id, @RequestParam String status) {
-        try {
-            CourseClass updatedClass = courseClassService.updateStatus(id, status);
-            return ResponseEntity.ok(updatedClass);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    // 更新班级学生数量
-    @PatchMapping("/{id}/students")
-    public ResponseEntity<CourseClass> updateStudentCount(
-            @PathVariable Long id, @RequestParam Integer currentStudents) {
-        try {
-            CourseClass updatedClass = courseClassService.updateStudentCount(id, currentStudents);
-            return ResponseEntity.ok(updatedClass);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
     // 删除班级
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCourseClass(@PathVariable Long id) {
@@ -126,33 +95,6 @@ public class CourseClassController {
             return ResponseEntity.badRequest().build();
         }
     }
-
-    // 查找指定时间范围内的班级
-    @GetMapping("/date-range")
-    public ResponseEntity<List<CourseClass>> getCourseClassesInDateRange(
-            @RequestParam String startDate, @RequestParam String endDate) {
-        try {
-            LocalDateTime start = LocalDateTime.parse(startDate);
-            LocalDateTime end = LocalDateTime.parse(endDate);
-            List<CourseClass> courseClasses = courseClassService.findClassesInDateRange(start, end);
-            return ResponseEntity.ok(courseClasses);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    // 检查班级是否已满
-    @GetMapping("/{id}/full")
-    public ResponseEntity<Boolean> isClassFull(@PathVariable Long id) {
-        boolean isFull = courseClassService.isClassFull(id);
-        return ResponseEntity.ok(isFull);
-    }
-
-    // 获取班级可用座位数
-    @GetMapping("/{id}/available-seats")
-    public ResponseEntity<Integer> getAvailableSeats(@PathVariable Long id) {
-        Integer availableSeats = courseClassService.getAvailableSeats(id);
-        return ResponseEntity.ok(availableSeats);
-    }
+    
+    // 移除已废弃的接口：status, updateStudentCount, date-range 等
 }
-

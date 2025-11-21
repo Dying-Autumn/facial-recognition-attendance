@@ -2,17 +2,30 @@ package com.facial.recognition.pojo;
 
 import jakarta.persistence.*;
 
-@Table(name="tb_user")
+@Table(name="User")
 @Entity
 public class User {
     @Id        //主键
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "UserID")
     private Integer UserID;
+
+    @Column(name = "Username")
     private String userName;       //用户名
+
+    @Column(name = "Password")
     private String password;
+
+    @Column(name = "RealName")
     private String realName;
+
+    @Column(name = "PhoneNumber")
     private String phoneNumber;
+
+    @Column(name = "Email")
     private String email;
+
+    @Column(name = "RoleID")
     private Integer RoleID;
     //get,set,tostring方法的实现
     public Integer getUserID() {

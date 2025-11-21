@@ -1,7 +1,9 @@
 package com.facial.recognition.service;
 
 import com.facial.recognition.pojo.User;
+import com.facial.recognition.pojo.Student;
 import com.facial.recognition.repository.UserRepository;
+import com.facial.recognition.repository.StudentRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,9 @@ public class UserService implements IUserService {
     
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private StudentRepository studentRepository;
 
     @Override
     public User add(User user) {
@@ -34,7 +39,24 @@ public class UserService implements IUserService {
 
     @Override
     public Optional<User> findByUsername(String username) {
-        return userRepository.findByUserName(username);
+        Optional<User> user = userRepository.findByUserName(username);
+        if (user.isPresent()) {
+            return user;
+        }
+        // 尝试通过学号查找
+        return studentRepository.findByStudentNumber(username)
+                .map(Student::getUserId)
+                .flatMap(userRepository::findById);
+    }
+
+    @Override
+    public User save(User user) {
+        return userRepository.save(user);
+    }
+
+    @Override
+    public void delete(Integer id) {
+        userRepository.deleteById(id);
     }
 }
 

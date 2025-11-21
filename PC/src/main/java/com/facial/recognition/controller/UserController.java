@@ -2,6 +2,8 @@ package com.facial.recognition.controller;
 
 import com.facial.recognition.pojo.User;
 import com.facial.recognition.service.IUserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +14,8 @@ import java.util.List;
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "*")
 public class UserController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
     
     @Autowired
     private IUserService userService;
@@ -38,6 +42,29 @@ public class UserController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    // 登录接口
+    @PostMapping("/login")
+    public ResponseEntity<User> login(@RequestBody com.facial.recognition.dto.LoginDTO loginDTO) {
+        logger.info("收到登录请求: 用户名 [{}]", loginDTO.getUsername());
+        
+        return userService.findByUsername(loginDTO.getUsername())
+                .map(user -> {
+                    // 注意：生产环境不建议在日志中打印密码，这里仅为了调试保留部分脱敏信息或不打印
+                    logger.info("数据库找到用户: ID={}", user.getUserID());
+                    if (user.getPassword().equals(loginDTO.getPassword())) {
+                        logger.info("密码匹配成功！用户: {}", user.getUserName());
+                        return ResponseEntity.ok(user);
+                    } else {
+                        logger.warn("密码不匹配！尝试登录用户: {}", loginDTO.getUsername());
+                        return ResponseEntity.status(401).<User>build();
+                    }
+                })
+                .orElseGet(() -> {
+                    logger.warn("数据库未找到用户: {}", loginDTO.getUsername());
+                    return ResponseEntity.notFound().build();
+                });
+    }
     
     // 创建用户
     @PostMapping
@@ -55,7 +82,7 @@ public class UserController {
     public ResponseEntity<User> updateUser(@PathVariable Integer id, @RequestBody User user) {
         return userService.findById(id)
                 .map(existingUser -> {
-                    user.setUserId(id);
+                    user.setUserID(id);
                     User updatedUser = userService.save(user);
                     return ResponseEntity.ok(updatedUser);
                 })
