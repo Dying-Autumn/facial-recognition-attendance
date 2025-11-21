@@ -46,12 +46,6 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AttendanceTask> findByTaskDescriptionContaining(String description) {
-        return attendanceTaskRepository.findByDescriptionContaining(description);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<AttendanceTask> findTasksInTimeRange(LocalDateTime startTime, LocalDateTime endTime) {
         return attendanceTaskRepository.findTasksInTimeRange(startTime, endTime);
     }
@@ -74,9 +68,6 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
         if (existingTask.isPresent()) {
             AttendanceTask updatedTask = existingTask.get();
             // 更新字段
-            if (attendanceTask.getDescription() != null) {
-                updatedTask.setDescription(attendanceTask.getDescription());
-            }
             if (attendanceTask.getStartTime() != null) {
                 updatedTask.setStartTime(attendanceTask.getStartTime());
             }
@@ -94,9 +85,6 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
             }
             if (attendanceTask.getRadius() != null) {
                 updatedTask.setRadius(attendanceTask.getRadius());
-            }
-            if (attendanceTask.getIsFaceRequired() != null) {
-                updatedTask.setIsFaceRequired(attendanceTask.getIsFaceRequired());
             }
             
             return attendanceTaskRepository.save(updatedTask);

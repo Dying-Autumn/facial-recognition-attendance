@@ -22,15 +22,6 @@ public class AttendanceTaskController {
     @PostMapping
     public ResponseEntity<AttendanceTask> createAttendanceTask(@RequestBody AttendanceTask attendanceTask) {
         try {
-            // 如果前端传了 taskName 但没传 description，或者想把 taskName 拼接到 description
-            if (attendanceTask.getTaskName() != null && !attendanceTask.getTaskName().isEmpty()) {
-                String desc = attendanceTask.getDescription() == null ? "" : attendanceTask.getDescription();
-                // 如果 description 不包含 taskName，则拼按
-                if (!desc.contains(attendanceTask.getTaskName())) {
-                    attendanceTask.setDescription(attendanceTask.getTaskName() + (desc.isEmpty() ? "" : " - " + desc));
-                }
-            }
-            
             AttendanceTask createdTask = attendanceTaskService.createAttendanceTask(attendanceTask);
             return ResponseEntity.ok(createdTask);
         } catch (Exception e) {
@@ -58,13 +49,6 @@ public class AttendanceTaskController {
     @GetMapping("/teacher/{teacherId}")
     public ResponseEntity<List<AttendanceTask>> getTasksByTeacherId(@PathVariable Long teacherId) {
         List<AttendanceTask> tasks = attendanceTaskService.findByTeacherId(teacherId);
-        return ResponseEntity.ok(tasks);
-    }
-
-    // 根据描述搜索考勤任务
-    @GetMapping("/search")
-    public ResponseEntity<List<AttendanceTask>> searchTasksByDescription(@RequestParam String description) {
-        List<AttendanceTask> tasks = attendanceTaskService.findByTaskDescriptionContaining(description);
         return ResponseEntity.ok(tasks);
     }
 

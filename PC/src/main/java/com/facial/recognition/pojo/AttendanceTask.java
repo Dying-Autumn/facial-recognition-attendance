@@ -38,12 +38,6 @@ public class AttendanceTask {
     @Column(name = "Radius")
     private Integer radius; // 有效范围半径(米)
 
-    @Column(name = "IsFaceRequired")
-    private Integer isFaceRequired; // 是否强制人脸识别(1:是 0:否)
-
-    @Column(name = "TaskDescription")
-    private String description; // 任务描述
-
     @Column(name = "CreatedDate")
     private LocalDateTime createdTime; // 创建时间
 
@@ -88,12 +82,6 @@ public class AttendanceTask {
 
     public Integer getRadius() { return radius; }
     public void setRadius(Integer radius) { this.radius = radius; }
-
-    public Integer getIsFaceRequired() { return isFaceRequired; }
-    public void setIsFaceRequired(Integer isFaceRequired) { this.isFaceRequired = isFaceRequired; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
 
     public LocalDateTime getCreatedTime() { return createdTime; }
     public void setCreatedTime(LocalDateTime createdTime) { this.createdTime = createdTime; }

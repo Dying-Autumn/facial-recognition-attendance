@@ -452,11 +452,22 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="task-start-time">开始时间 <span class="required">*</span></label>
-                                        <input type="datetime-local" id="task-start-time" name="startTime" required>
+                                        <!-- 使用 time 类型，只显示时间 -->
+                                        <input type="time" id="task-start-time" name="startTime" required>
                                     </div>
                                     <div class="form-group">
-                                        <label for="task-end-time">结束时间 <span class="required">*</span></label>
-                                        <input type="datetime-local" id="task-end-time" name="endTime" required>
+                                        <label for="task-duration">持续时长(分钟) <span class="required">*</span></label>
+                                        <div class="form-row" style="gap: 10px;">
+                                            <select id="task-duration-select" style="flex: 1;" onchange="updateDurationInput(this.value)">
+                                                <option value="5">5分钟</option>
+                                                <option value="10" selected>10分钟</option>
+                                                <option value="15">15分钟</option>
+                                                <option value="30">30分钟</option>
+                                                <option value="45">45分钟</option>
+                                                <option value="custom">自定义</option>
+                                            </select>
+                                            <input type="number" id="task-duration-input" name="duration" value="10" min="1" style="flex: 1; display: none;" placeholder="输入分钟数">
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -488,18 +499,11 @@ document.addEventListener('DOMContentLoaded', function () {
                                         </div>
                                         <div class="form-group">
                                             <label for="radius" style="font-size: 0.9em;">有效半径(米)</label>
-                                            <input type="number" id="radius" name="radius" value="100" required>
+                                            <input type="number" id="radius" name="radius" value="30" required>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- 移除强制人脸识别选项，默认为1 -->
-                                <input type="hidden" id="is-face-required" name="isFaceRequired" value="1">
-
-                                <div class="form-group">
-                                    <label for="task-desc">任务描述</label>
-                                    <textarea id="task-desc" name="description" rows="3"></textarea>
-                                </div>
                                 <button type="submit" class="btn btn-accent" style="margin-top: 10px;">发布考勤</button>
                             </form>
                         </div>
@@ -1046,15 +1050,16 @@ function initPublishTaskPage() {
     
     // 设置默认时间
     const now = new Date();
-    const offset = now.getTimezoneOffset() * 60000;
-    const start = new Date(now.getTime() - offset).toISOString().slice(0, 16);
-    const end = new Date(now.getTime() + 2 * 60 * 60 * 1000 - offset).toISOString().slice(0, 16);
+    // 设置默认时间为当前时间 (HH:mm)
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const currentTimeStr = `${hours}:${minutes}`;
     
     const startTimeInput = document.getElementById('task-start-time');
-    const endTimeInput = document.getElementById('task-end-time');
+    // const endTimeInput = document.getElementById('task-end-time'); // 已移除
     
-    if (startTimeInput) startTimeInput.value = start;
-    if (endTimeInput) endTimeInput.value = end;
+    if (startTimeInput) startTimeInput.value = currentTimeStr;
+    // if (endTimeInput) endTimeInput.value = end; // 已移除
 
     // 加载班级
     CourseClassAPI.getAll().then(classes => {
@@ -1180,6 +1185,19 @@ function initPublishTaskPage() {
             initMap();
         }
     }, 500);
+
+    // 全局函数：处理时长选择
+    window.updateDurationInput = function(value) {
+        const input = document.getElementById('task-duration-input');
+        if (value === 'custom') {
+            input.style.display = 'block';
+            input.value = '';
+            input.focus();
+        } else {
+            input.style.display = 'none';
+            input.value = value;
+        }
+    };
 
     // 搜索地点功能
     if (btnSearchLocation) {
@@ -1308,25 +1326,45 @@ function initPublishTaskPage() {
         });
     }
 
-    // 处理提交
+        // 处理提交
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const formData = new FormData(form);
-        const isFaceRequiredInput = document.getElementById('is-face-required');
-        const isFaceRequired = isFaceRequiredInput ? parseInt(isFaceRequiredInput.value) : 1;
+
+        // 计算开始和结束时间
+        const startTimeValue = formData.get('startTime'); // HH:mm
+        const duration = parseInt(document.getElementById('task-duration-input').value) || 10;
+        
+        // 构造完整的开始时间 (今天日期 + 选择的时间)
+        const now = new Date();
+        const [hours, minutes] = startTimeValue.split(':').map(Number);
+        const startDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+        
+        // 如果选择的时间已经过去了（比如现在10点，选择了9点），是否默认为明天？
+        // 暂时按当天处理，如果是补签或测试可能需要过去时间
+        
+        // 构造结束时间
+        const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+        
+        // 处理时区偏移，转换为 ISO 字符串发送给后端
+        // 注意：后端 AttendanceTask.java 使用 LocalDateTime，通常期望不带时区的 ISO 格式 (YYYY-MM-DDTHH:mm:ss)
+        // 或者前端手动拼接格式
+        
+        const formatDate = (date) => {
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        };
 
         const task = {
             courseClassId: parseInt(formData.get('courseClassId')),
             taskName: formData.get('taskName'),
-            startTime: formData.get('startTime'),
-            endTime: formData.get('endTime'),
-            description: formData.get('description'),
+            startTime: formatDate(startDateTime),
+            endTime: formatDate(endDateTime),
             locationRange: formData.get('locationRange'),
             latitude: parseFloat(formData.get('latitude')),
             longitude: parseFloat(formData.get('longitude')),
             radius: parseInt(formData.get('radius')),
-            isFaceRequired: isFaceRequired,
             teacherId: 1 // 暂时硬编码教师ID
         };
         
@@ -1334,9 +1372,18 @@ function initPublishTaskPage() {
             await AttendanceTaskAPI.create(task);
             showToast('考勤发布成功！', 'success');
             form.reset();
-            // 重置时间
-            if (startTimeInput) startTimeInput.value = start;
-            if (endTimeInput) endTimeInput.value = end;
+            // 重置时间为当前时间
+            if (startTimeInput) {
+                const now = new Date();
+                const h = String(now.getHours()).padStart(2, '0');
+                const m = String(now.getMinutes()).padStart(2, '0');
+                startTimeInput.value = `${h}:${m}`;
+            }
+            // 重置时长选择
+            document.getElementById('task-duration-select').value = '10';
+            document.getElementById('task-duration-input').style.display = 'none';
+            document.getElementById('task-duration-input').value = '10';
+            
             // 重置按钮状态
             if (btnGetLocation) {
                 btnGetLocation.textContent = '📍 获取当前位置';

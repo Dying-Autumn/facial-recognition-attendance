@@ -25,9 +25,6 @@ public interface AttendanceTaskRepository extends JpaRepository<AttendanceTask, 
     // 状态相关的查询需要改为基于时间判断，或者在应用层过滤
     // 这里暂时移除 findByStatus 等方法，改为提供基于时间的查询
     
-    // 根据任务描述模糊查找
-    List<AttendanceTask> findByDescriptionContaining(String description);
-    
     // 查找指定时间范围内的考勤任务
     @Query("SELECT at FROM AttendanceTask at WHERE at.startTime <= :endTime AND at.endTime >= :startTime")
     List<AttendanceTask> findTasksInTimeRange(@Param("startTime") LocalDateTime startTime, 

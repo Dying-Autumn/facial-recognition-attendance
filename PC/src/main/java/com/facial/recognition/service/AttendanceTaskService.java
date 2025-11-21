@@ -20,9 +20,6 @@ public interface AttendanceTaskService {
     // 根据教师ID查找考勤任务
     List<AttendanceTask> findByTeacherId(Long teacherId);
     
-    // 根据任务描述查找考勤任务
-    List<AttendanceTask> findByTaskDescriptionContaining(String description);
-    
     // 查找指定时间范围内的考勤任务
     List<AttendanceTask> findTasksInTimeRange(LocalDateTime startTime, LocalDateTime endTime);
     
