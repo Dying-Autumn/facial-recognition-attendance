@@ -21,7 +21,6 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public Role createRole(Role role) {
         role.setCreatedTime(LocalDateTime.now());
-        role.setUpdatedTime(LocalDateTime.now());
         return roleRepository.save(role);
     }
 
@@ -46,13 +45,13 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional(readOnly = true)
     public List<Role> findByStatus(String status) {
-        return roleRepository.findByStatus(status);
+        return findAll();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Role> findActiveRoles() {
-        return roleRepository.findByStatusOrderByRoleNameAsc("ACTIVE");
+        return findAll();
     }
 
     @Override
@@ -74,8 +73,6 @@ public class RoleServiceImpl implements RoleService {
             Role updatedRole = existingRole.get();
             updatedRole.setRoleName(role.getRoleName());
             updatedRole.setDescription(role.getDescription());
-            updatedRole.setStatus(role.getStatus());
-            updatedRole.setUpdatedTime(LocalDateTime.now());
             return roleRepository.save(updatedRole);
         }
         throw new RuntimeException("Role not found with id: " + roleId);
@@ -83,13 +80,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public Role updateStatus(Integer roleId, String status) {
-        Optional<Role> role = roleRepository.findById(roleId);
-        if (role.isPresent()) {
-            role.get().setStatus(status);
-            role.get().setUpdatedTime(LocalDateTime.now());
-            return roleRepository.save(role.get());
-        }
-        throw new RuntimeException("Role not found with id: " + roleId);
+        throw new RuntimeException("Update status not supported as column does not exist.");
     }
 
     @Override
@@ -106,7 +97,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional(readOnly = true)
     public Long countActiveRoles() {
-        return roleRepository.countActiveRoles();
+        return roleRepository.count();
     }
 
     @Override

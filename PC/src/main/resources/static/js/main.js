@@ -300,8 +300,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="card">
                         <div class="card-header">
                             <div class="card-title">课程信息管理</div>
-                            <button class="btn btn-accent" onclick="addCourse()">➕ 添加课程</button>
-                            <button class="btn" onclick="location.reload()">🔄 刷新</button>
+                            <button class="btn btn-accent" onclick="addCourse()">添加课程</button>
+                            <button class="btn" onclick="location.reload()">刷新</button>
                         </div>
                         <div class="card-body">
                             <div class="table-container">
@@ -323,8 +323,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                             <td>3</td>
                                             <td>
                                                 <div class="btn-group">
-                                                    <button class="btn" onclick="editCourse('C001', '软件工程', '张老师', 3)">✏️ 编辑</button>
-                                                    <button class="btn btn-danger" onclick="deleteCourse('C001', '软件工程')">🗑️ 删除</button>
+                                                    <button class="btn" onclick="editCourse('C001', '软件工程', '张老师', 3)">编辑</button>
+                                                    <button class="btn btn-danger" onclick="deleteCourse('C001', '软件工程')">删除</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -335,8 +335,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                             <td>4</td>
                                             <td>
                                                 <div class="btn-group">
-                                                    <button class="btn" onclick="editCourse('C002', '数据结构', '李老师', 4)">✏️ 编辑</button>
-                                                    <button class="btn btn-danger" onclick="deleteCourse('C002', '数据结构')">🗑️ 删除</button>
+                                                    <button class="btn" onclick="editCourse('C002', '数据结构', '李老师', 4)">编辑</button>
+                                                    <button class="btn btn-danger" onclick="deleteCourse('C002', '数据结构')">删除</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -352,8 +352,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="card">
                         <div class="card-header">
                             <div class="card-title">教师信息管理</div>
-                            <button class="btn btn-accent" onclick="addTeacher()">➕ 添加教师</button>
-                            <button class="btn" onclick="location.reload()">🔄 刷新</button>
+                            <button class="btn btn-accent" onclick="addTeacher()">添加教师</button>
+                            <button class="btn" onclick="location.reload()">刷新</button>
                         </div>
                         <div class="card-body">
                             <div class="table-container">
@@ -375,8 +375,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                             <td>计算机学院</td>
                                             <td>
                                                 <div class="btn-group">
-                                                    <button class="btn" onclick="editTeacher('T001', '张老师', '教授', '计算机学院')">✏️ 编辑</button>
-                                                    <button class="btn btn-danger" onclick="deleteTeacher('T001', '张老师')">🗑️ 删除</button>
+                                                    <button class="btn" onclick="editTeacher('T001', '张老师', '教授', '计算机学院')">编辑</button>
+                                                    <button class="btn btn-danger" onclick="deleteTeacher('T001', '张老师')">删除</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -387,8 +387,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                             <td>计算机学院</td>
                                             <td>
                                                 <div class="btn-group">
-                                                    <button class="btn" onclick="editTeacher('T002', '李老师', '副教授', '计算机学院')">✏️ 编辑</button>
-                                                    <button class="btn btn-danger" onclick="deleteTeacher('T002', '李老师')">🗑️ 删除</button>
+                                                    <button class="btn" onclick="editTeacher('T002', '李老师', '副教授', '计算机学院')">编辑</button>
+                                                    <button class="btn btn-danger" onclick="deleteTeacher('T002', '李老师')">删除</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -404,8 +404,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="card">
                         <div class="card-header">
                             <div class="card-title">学生信息管理</div>
-                            <button class="btn btn-accent" onclick="addStudent()">➕ 添加学生</button>
-                            <button class="btn" onclick="loadStudents()">🔄 刷新</button>
+                            <button class="btn btn-accent" onclick="addStudent()">添加学生</button>
+                            <button class="btn" onclick="loadStudents()">刷新</button>
                         </div>
                         <div class="card-body">
                             <div class="table-container">
@@ -430,6 +430,38 @@ document.addEventListener('DOMContentLoaded', function () {
                 `;
                 // 加载学生数据
                 setTimeout(loadStudents, 100);
+                break;
+            case 'role-management':
+                content = `
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">角色管理</div>
+                            <button class="btn btn-accent" onclick="addRole()">添加角色</button>
+                            <button class="btn" onclick="loadRolesTable()">刷新</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>角色ID</th>
+                                            <th>角色名称</th>
+                                            <th>角色描述</th>
+                                            <th>创建时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="role-table-body">
+                                        <tr>
+                                            <td colspan="5" style="text-align: center;">加载中...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                setTimeout(loadRolesTable, 100);
                 break;
             case 'publish-task':
                 content = `
@@ -479,10 +511,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                             <input type="text" id="location-range" name="locationRange" placeholder="例如：一教302" required>
                                         </div>
                                         <div class="form-group" style="flex: 1;">
-                                            <button type="button" class="btn btn-secondary" id="btn-search-location" style="width: 100%; margin-bottom: 5px;">🔍 搜索</button>
+                                            <button type="button" class="btn btn-secondary" id="btn-search-location" style="width: 100%; margin-bottom: 5px;">搜索</button>
                                         </div>
                                         <div class="form-group" style="flex: 1;">
-                                            <button type="button" class="btn btn-secondary" id="btn-get-location" style="width: 100%; margin-bottom: 5px;">📍 获取当前位置</button>
+                                            <button type="button" class="btn btn-secondary" id="btn-get-location" style="width: 100%; margin-bottom: 5px;">获取当前位置</button>
                                         </div>
                                     </div>
                                     <!-- 地图容器 -->
@@ -639,8 +671,8 @@ async function loadStudents() {
                 <td>${student.className || '-'}</td>
                 <td>
                     <div class="btn-group">
-                        <button class="btn" onclick="editStudent(${student.studentId})">✏️ 编辑</button>
-                        <button class="btn btn-danger" onclick="deleteStudent(${student.studentId})">🗑️ 删除</button>
+                        <button class="btn" onclick="editStudent(${student.studentId})">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteStudent(${student.studentId})">删除</button>
                     </div>
                 </td>
             </tr>
@@ -774,7 +806,123 @@ function deleteStudent(id) {
 
 // ========== 角色管理功能 ==========
 
-// 加载所有角色
+// 加载所有角色到表格
+async function loadRolesTable() {
+    const tbody = document.getElementById('role-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">加载中...</td></tr>';
+    
+    try {
+        const roles = await RoleAPI.getAll();
+        
+        if (roles.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无角色数据</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = roles.map(role => `
+            <tr>
+                <td>${role.roleId}</td>
+                <td>${role.roleName}</td>
+                <td>${role.description || '-'}</td>
+                <td>${role.createdTime ? new Date(role.createdTime).toLocaleString('zh-CN') : '-'}</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="assignPermissions(${role.roleId}, '${role.roleName}')">分配权限</button>
+                        <button class="btn" onclick="editRole(${role.roleId})">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteRole(${role.roleId}, '${role.roleName}')">删除</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('加载角色失败:', error);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">加载失败，请检查后端服务</td></tr>';
+    }
+}
+
+// 添加角色
+function addRole() {
+    Modal.form({
+        title: '➕ 添加角色',
+        fields: [
+            { id: 'roleName', name: 'roleName', label: '角色名称', type: 'text', required: true },
+            { id: 'roleDesc', name: 'description', label: '角色描述', type: 'textarea', required: false }
+        ],
+        submitText: '添加',
+        onSubmit: (formData) => {
+            RoleAPI.create(formData)
+                .then(() => {
+                    showToast('角色添加成功！', 'success');
+                    loadRolesTable();
+                })
+                .catch(error => {
+                    console.error('添加失败:', error);
+                    showToast('添加失败：' + (error.message || '未知错误'), 'error');
+                });
+        }
+    });
+}
+
+// 编辑角色
+function editRole(id) {
+    RoleAPI.getById(id)
+        .then(role => {
+            Modal.form({
+                title: '✏️ 编辑角色信息',
+                fields: [
+                    { id: 'roleName', name: 'roleName', label: '角色名称', type: 'text', value: role.roleName, required: true },
+                    { id: 'roleDesc', name: 'description', label: '角色描述', type: 'textarea', value: role.description || '', required: false }
+                ],
+                submitText: '保存',
+                onSubmit: (formData) => {
+                    RoleAPI.update(id, formData)
+                        .then(() => {
+                            showToast('角色信息更新成功！', 'success');
+                            loadRolesTable();
+                        })
+                        .catch(error => {
+                            console.error('更新失败:', error);
+                            showToast('更新失败，请重试', 'error');
+                        });
+                }
+            });
+        })
+        .catch(error => {
+            console.error('获取角色信息失败:', error);
+            showToast('获取角色信息失败', 'error');
+        });
+}
+
+// 删除角色
+function deleteRole(id, roleName) {
+    Modal.confirm({
+        title: '⚠️ 确认删除角色',
+        message: `确定要删除角色"${roleName}"吗？<br><br>此操作不可撤销，且会影响该角色下的所有用户。`,
+        submitText: '删除',
+        danger: true,
+        onConfirm: () => {
+            RoleAPI.delete(id)
+                .then(() => {
+                    showToast(`角色"${roleName}"删除成功！`, 'success');
+                    loadRolesTable();
+                })
+                .catch(error => {
+                    console.error('删除失败:', error);
+                    showToast('删除失败，请重试', 'error');
+                });
+        }
+    });
+}
+
+// 分配权限
+function assignPermissions(roleId, roleName) {
+    // TODO: 实现权限分配功能
+    showToast(`为角色"${roleName}"分配权限功能正在开发中...`, 'info');
+}
+
+// 加载所有角色（保留旧的方法名，用于其他地方调用）
 async function loadRoles() {
     try {
         const roles = await RoleAPI.getAll();
@@ -827,8 +975,8 @@ function addCourse() {
                 <td>${formData.credits}</td>
                 <td>
                     <div class="btn-group">
-                        <button class="btn" onclick="editCourse('${formData.courseCode}', '${formData.courseName}', '${formData.teacher}', ${formData.credits})">✏️ 编辑</button>
-                        <button class="btn btn-danger" onclick="deleteCourse('${formData.courseCode}', '${formData.courseName}')">🗑️ 删除</button>
+                        <button class="btn" onclick="editCourse('${formData.courseCode}', '${formData.courseName}', '${formData.teacher}', ${formData.credits})">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteCourse('${formData.courseCode}', '${formData.courseName}')">删除</button>
                     </div>
                 </td>
             `;
@@ -951,8 +1099,8 @@ function addTeacher() {
                         <td>${formData.department}</td>
                         <td>
                             <div class="btn-group">
-                                <button class="btn" onclick="editTeacher('${teacherNumber}', '${formData.teacherName}', '${formData.title}', '${formData.department}')">✏️ 编辑</button>
-                                <button class="btn btn-danger" onclick="deleteTeacher('${teacherNumber}', '${formData.teacherName}')">🗑️ 删除</button>
+                                <button class="btn" onclick="editTeacher('${teacherNumber}', '${formData.teacherName}', '${formData.title}', '${formData.department}')">编辑</button>
+                                <button class="btn btn-danger" onclick="deleteTeacher('${teacherNumber}', '${formData.teacherName}')">删除</button>
                             </div>
                         </td>
                     `;
@@ -1265,7 +1413,7 @@ function initPublishTaskPage() {
                 console.error('搜索失败:', e);
                 showToast('搜索发生错误，请检查网络', 'error');
             } finally {
-                btnSearchLocation.textContent = '🔍 搜索';
+                btnSearchLocation.textContent = '搜索';
                 btnSearchLocation.disabled = false;
             }
         });
@@ -1307,11 +1455,11 @@ function initPublishTaskPage() {
                         }
                     } catch(e) {}
 
-                    btnGetLocation.textContent = '✅ 定位成功';
+                    btnGetLocation.textContent = '定位成功';
                     btnGetLocation.classList.remove('btn-secondary');
                     btnGetLocation.classList.add('btn-success');
                     setTimeout(() => {
-                        btnGetLocation.textContent = '📍 获取当前位置';
+                        btnGetLocation.textContent = '获取当前位置';
                         btnGetLocation.disabled = false;
                         btnGetLocation.classList.remove('btn-success');
                         btnGetLocation.classList.add('btn-secondary');
@@ -1319,7 +1467,7 @@ function initPublishTaskPage() {
                 },
                 (error) => {
                     showToast('获取位置失败', 'error');
-                    btnGetLocation.textContent = '📍 获取当前位置';
+                    btnGetLocation.textContent = '获取当前位置';
                     btnGetLocation.disabled = false;
                 }
             );
@@ -1386,7 +1534,7 @@ function initPublishTaskPage() {
             
             // 重置按钮状态
             if (btnGetLocation) {
-                btnGetLocation.textContent = '📍 获取当前位置';
+                btnGetLocation.textContent = '获取当前位置';
                 btnGetLocation.classList.remove('btn-success');
                 btnGetLocation.classList.add('btn-secondary');
             }

@@ -51,19 +51,11 @@ public class RoleController {
         return ResponseEntity.ok(roles);
     }
 
-    // 根据状态获取角色
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<Role>> getRolesByStatus(@PathVariable String status) {
-        List<Role> roles = roleService.findByStatus(status);
-        return ResponseEntity.ok(roles);
-    }
-
-    // 获取活跃状态的角色
-    @GetMapping("/active")
-    public ResponseEntity<List<Role>> getActiveRoles() {
-        List<Role> roles = roleService.findActiveRoles();
-        return ResponseEntity.ok(roles);
-    }
+    // 移除依赖 status 的接口
+    // @GetMapping("/status/{status}")
+    // @GetMapping("/active")
+    // @PatchMapping("/{id}/status")
+    // @GetMapping("/count/active")
 
     // 根据角色名称搜索
     @GetMapping("/search/name")
@@ -90,17 +82,6 @@ public class RoleController {
         }
     }
 
-    // 更新角色状态
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<Role> updateRoleStatus(@PathVariable Integer id, @RequestParam String status) {
-        try {
-            Role role = roleService.updateStatus(id, status);
-            return ResponseEntity.ok(role);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
     // 删除角色
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRole(@PathVariable Integer id) {
@@ -120,13 +101,6 @@ public class RoleController {
                   .orElse(ResponseEntity.notFound().build());
     }
 
-    // 统计活跃角色数量
-    @GetMapping("/count/active")
-    public ResponseEntity<Long> countActiveRoles() {
-        Long count = roleService.countActiveRoles();
-        return ResponseEntity.ok(count);
-    }
-
     // 检查角色名称是否存在
     @GetMapping("/exists/{roleName}")
     public ResponseEntity<Boolean> checkRoleNameExists(@PathVariable String roleName) {
@@ -134,4 +108,3 @@ public class RoleController {
         return ResponseEntity.ok(exists);
     }
 }
-

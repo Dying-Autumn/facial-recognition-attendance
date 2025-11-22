@@ -12,30 +12,24 @@ import java.util.Optional;
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Integer> {
     
-    // 閺嶈宓佺憴鎺曞閸氬秶袨閺屻儲澹樼憴鎺曞
+    // 根据角色名称查找角色
     Optional<Role> findByRoleName(String roleName);
     
-    // 閺嶈宓侀悩鑸碘偓浣圭叀閹垫崘顫楅敓?
-    List<Role> findByStatus(String status);
+    // 移除依赖 status 的查询方法，因为数据库中没有该字段
+    // List<Role> findByStatus(String status);
+    // List<Role> findByStatusOrderByRoleNameAsc(String status);
     
-    // 閺屻儲澹樺ú鏄忕┈閻樿埖鈧胶娈戠憴鎺曞
-    List<Role> findByStatusOrderByRoleNameAsc(String status);
-    
-    // 閺嶈宓佺憴鎺曞閸氬秶袨濡紕纭﹂弻銉嚄
+    // 根据角色名称模糊查询
     List<Role> findByRoleNameContaining(String roleName);
     
-    // 閺嶈宓侀幓蹇氬牚濡紕纭﹂弻銉嚄
+    // 根据描述模糊查询
     List<Role> findByDescriptionContaining(String description);
     
-    // 閼奉亜鐣炬稊澶嬬叀鐠囶澁绱伴弻銉﹀閹稿洤鐣鹃悽銊﹀煕ID閻ㄥ嫯顫楅敓?
-    @Query("SELECT r FROM Role r JOIN User u ON r.roleId = u.RoleID WHERE u.UserID = :userId")
+    // 根据用户ID查找角色 (User 表中有 RoleID 外键)
+    // 注意：User 实体类中需正确映射 RoleID
+    @Query("SELECT r FROM Role r, User u WHERE r.roleId = u.RoleID AND u.UserID = :userId")
     Optional<Role> findRoleByUserId(@Param("userId") Integer userId);
     
-    // 缂佺喕顓哥憴鎺曞閺佷即鍣?
-    @Query("SELECT COUNT(r) FROM Role r WHERE r.status = 'ACTIVE'")
-    Long countActiveRoles();
+    // 移除依赖 status 的统计方法
+    // Long countActiveRoles();
 }
-
-
-
-
