@@ -6,25 +6,24 @@
 const Generator = {
     /**
      * 生成学号
-     * 格式：年份(4位) + 专业代码(2位) + 流水号(4位)
-     * 例如：2024010001
+     * 格式：年份(4位) + 流水号(4位)
+     * 例如：20240001
      */
     generateStudentNumber: function() {
         const year = new Date().getFullYear();
-        const majorCode = '00'; // 默认专业代码，可以根据实际情况修改
-        const sequence = Math.floor(Math.random() * 9000) + 1000; // 1000-9999
-        return `${year}${majorCode}${sequence}`;
+        const sequence = Math.floor(Math.random() * 9000) + 1; // 0001-9999
+        return `${year}${String(sequence).padStart(4, '0')}`;
     },
 
     /**
      * 生成教师工号
-     * 格式：T + 年份后2位 + 流水号(4位)
-     * 例如：T240001
+     * 格式：T + 年份后2位 + 流水号(5位)
+     * 例如：T24000001
      */
     generateTeacherNumber: function() {
         const year = new Date().getFullYear().toString().slice(-2);
-        const sequence = Math.floor(Math.random() * 9000) + 1000; // 1000-9999
-        return `T${year}${sequence}`;
+        const sequence = Math.floor(Math.random() * 90000) + 1; // 00001-99999
+        return `T${year}${String(sequence).padStart(5, '0')}`;
     },
 
     /**

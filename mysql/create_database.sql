@@ -206,37 +206,36 @@ INSERT INTO `Role` (`RoleName`, `RoleDescription`) VALUES
 ('教师', '可以管理课程、发布考勤任务、查看考勤统计'),
 ('学生', '可以进行签到、查看个人考勤记录');
 
--- 插入默认管理员账号 (密码: admin123，实际应用需要加密)
+-- 插入用户数据（包含管理员、教师、学生）
 INSERT INTO `User` (`Username`, `Password`, `RealName`, `PhoneNumber`, `Email`, `RoleID`) VALUES
-('admin', 'admin123', '系统管理员', '13800138000', 'admin@example.com', 1);
+-- 系统管理员
+('admin', 'admin123', '系统管理员', '13800138000', 'admin@example.com', 1),
 
--- 插入测试教师账号
-INSERT INTO `User` (`Username`, `Password`, `RealName`, `PhoneNumber`, `Email`, `RoleID`) VALUES
-('teacher_zhang', 'teacher123', '张老师', '13900001001', 'zhang@example.com', 2),
-('teacher_li', 'teacher123', '李老师', '13900001002', 'li@example.com', 2);
+-- 教师用户
+('T24001001', 'teacher123', '张老师', '13900001001', 'zhang@example.com', 2),
+('T24001002', 'teacher123', '李老师', '13900001002', 'li@example.com', 2),
 
--- 插入测试学生账号
-INSERT INTO `User` (`Username`, `Password`, `RealName`, `PhoneNumber`, `Email`, `RoleID`) VALUES
-('student001', 'student123', '王小明', '13900002001', 'wangxm@example.com', 3),
-('student002', 'student123', '李华', '13900002002', 'lihua@example.com', 3),
-('student003', 'student123', '张三', '13900002003', 'zhangsan@example.com', 3),
-('student004', 'student123', '李四', '13900002004', 'lisi@example.com', 3),
-('student005', 'student123', '王五', '13900002005', 'wangwu@example.com', 3),
-('student006', 'student123', '赵六', '13900002006', 'zhaoliu@example.com', 3);
+-- 学生用户
+('20210001', 'student123', '王小明', '13900002001', 'wangxm@example.com', 3),
+('20210002', 'student123', '李华', '13900002002', 'lihua@example.com', 3),
+('20210003', 'student123', '张三', '13900002003', 'zhangsan@example.com', 3),
+('20210004', 'student123', '李四', '13900002004', 'lisi@example.com', 3),
+('20210005', 'student123', '王五', '13900002005', 'wangwu@example.com', 3),
+('20210006', 'student123', '赵六', '13900002006', 'zhaoliu@example.com', 3);
 
--- 插入教师信息
+-- 插入教师信息（工号8位：T + 年份2位 + 流水号5位）
 INSERT INTO `Teacher` (`JobTitle`, `Department`, `UserID`) VALUES
 ('教授', '计算机学院', 2),
 ('副教授', '计算机学院', 3);
 
--- 插入学生信息
+-- 插入学生信息（学号8位：年份4位 + 流水号4位）
 INSERT INTO `Student` (`student_number`, `student_name`, `major_class`, `userid`) VALUES
-('2021001001', '王小明', '计算机2101班', 4),
-('2021001002', '李华', '计算机2101班', 5),
-('2021001003', '张三', '计算机2102班', 6),
-('2021001004', '李四', '计算机2102班', 7),
-('2021001005', '王五', '计算机2103班', 8),
-('2021001006', '赵六', '计算机2103班', 9);
+('20210001', '王小明', '计算机2101班', 4),
+('20210002', '李华', '计算机2101班', 5),
+('20210003', '张三', '计算机2102班', 6),
+('20210004', '李四', '计算机2102班', 7),
+('20210005', '王五', '计算机2103班', 8),
+('20210006', '赵六', '计算机2103班', 9);
 
 -- 插入功能权限数据（细粒度权限）
 INSERT INTO `Function` (`FunctionName`, `FunctionCode`, `ModuleName`, `Description`, `SortOrder`) VALUES

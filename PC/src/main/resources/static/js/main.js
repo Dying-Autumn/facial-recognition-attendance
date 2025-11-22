@@ -431,11 +431,46 @@ document.addEventListener('DOMContentLoaded', function () {
                 // 加载学生数据
                 setTimeout(loadStudents, 100);
                 break;
+            case 'user-management':
+                content = `
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">用户信息管理</div>
+                            <button class="btn btn-accent" onclick="addUser()">添加用户</button>
+                            <button class="btn" onclick="loadUsersTable()">刷新</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>用户ID</th>
+                                            <th>用户名</th>
+                                            <th>真实姓名</th>
+                                            <th>角色</th>
+                                            <th>手机号</th>
+                                            <th>邮箱</th>
+                                            <th>创建时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="user-table-body">
+                                        <tr>
+                                            <td colspan="8" style="text-align: center;">加载中...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                setTimeout(loadUsersTable, 100);
+                break;
             case 'role-management':
                 content = `
                     <div class="card">
                         <div class="card-header">
-                            <div class="card-title">角色管理</div>
+                            <div class="card-title">角色信息管理</div>
                             <button class="btn btn-accent" onclick="addRole()">添加角色</button>
                             <button class="btn" onclick="loadRolesTable()">刷新</button>
                         </div>
@@ -795,6 +830,154 @@ function deleteStudent(id) {
                 .then(() => {
                     showToast('学生删除成功！', 'success');
                     loadStudents();
+                })
+                .catch(error => {
+                    console.error('删除失败:', error);
+                    showToast('删除失败，请重试', 'error');
+                });
+        }
+    });
+}
+
+// ========== 用户管理功能 ==========
+
+// 加载所有用户到表格
+async function loadUsersTable() {
+    const tbody = document.getElementById('user-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">加载中...</td></tr>';
+    
+    try {
+        const users = await UserAPI.getAll();
+        
+        if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">暂无用户数据</td></tr>';
+            return;
+        }
+        
+        // 按用户ID排序
+        users.sort((a, b) => a.userId - b.userId);
+        
+        tbody.innerHTML = users.map(user => `
+            <tr>
+                <td>${user.userId}</td>
+                <td>${user.username}</td>
+                <td>${user.realName}</td>
+                <td>${user.roleId === 1 ? '系统管理员' : user.roleId === 2 ? '教师' : user.roleId === 3 ? '学生' : '未知'}</td>
+                <td>${user.phoneNumber || '-'}</td>
+                <td>${user.email || '-'}</td>
+                <td>${user.createdDate ? new Date(user.createdDate).toLocaleString('zh-CN') : '-'}</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn" onclick="editUser(${user.userId})">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteUser(${user.userId}, '${user.username}')">删除</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('加载用户失败:', error);
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: red;">加载失败，请检查后端服务</td></tr>';
+    }
+}
+
+// 添加用户
+function addUser() {
+    Modal.form({
+        title: '添加用户',
+        fields: [
+            { id: 'username', name: 'username', label: '用户名', type: 'text', required: true },
+            { id: 'password', name: 'password', label: '密码', type: 'password', required: true },
+            { id: 'realName', name: 'realName', label: '真实姓名', type: 'text', required: true },
+            { id: 'roleId', name: 'roleId', label: '角色', type: 'select', required: true,
+              options: [
+                  { value: '', label: '请选择角色' },
+                  { value: '1', label: '系统管理员' },
+                  { value: '2', label: '教师' },
+                  { value: '3', label: '学生' }
+              ]
+            },
+            { id: 'phoneNumber', name: 'phoneNumber', label: '手机号', type: 'tel', required: false },
+            { id: 'email', name: 'email', label: '邮箱', type: 'email', required: false }
+        ],
+        submitText: '添加',
+        onSubmit: (formData) => {
+            const userData = {
+                ...formData,
+                roleId: parseInt(formData.roleId),
+                isActive: 1
+            };
+            
+            UserAPI.create(userData)
+                .then(() => {
+                    showToast('用户添加成功！', 'success');
+                    loadUsersTable();
+                })
+                .catch(error => {
+                    console.error('添加失败:', error);
+                    showToast('添加失败：' + (error.message || '未知错误'), 'error');
+                });
+        }
+    });
+}
+
+// 编辑用户
+function editUser(id) {
+    UserAPI.getById(id)
+        .then(user => {
+            Modal.form({
+                title: '编辑用户信息',
+                fields: [
+                    { id: 'username', name: 'username', label: '用户名', type: 'text', value: user.username, required: true },
+                    { id: 'realName', name: 'realName', label: '真实姓名', type: 'text', value: user.realName, required: true },
+                    { id: 'roleId', name: 'roleId', label: '角色', type: 'select', value: String(user.roleId), required: true,
+                      options: [
+                          { value: '1', label: '系统管理员' },
+                          { value: '2', label: '教师' },
+                          { value: '3', label: '学生' }
+                      ]
+                    },
+                    { id: 'phoneNumber', name: 'phoneNumber', label: '手机号', type: 'tel', value: user.phoneNumber || '', required: false },
+                    { id: 'email', name: 'email', label: '邮箱', type: 'email', value: user.email || '', required: false }
+                ],
+                submitText: '保存',
+                onSubmit: (formData) => {
+                    const updatedUser = {
+                        ...formData,
+                        roleId: parseInt(formData.roleId)
+                    };
+                    
+                    UserAPI.update(id, updatedUser)
+                        .then(() => {
+                            showToast('用户信息更新成功！', 'success');
+                            loadUsersTable();
+                        })
+                        .catch(error => {
+                            console.error('更新失败:', error);
+                            showToast('更新失败，请重试', 'error');
+                        });
+                }
+            });
+        })
+        .catch(error => {
+            console.error('获取用户信息失败:', error);
+            showToast('获取用户信息失败', 'error');
+        });
+}
+
+// 删除用户
+function deleteUser(id, username) {
+    Modal.confirm({
+        title: '确认删除用户',
+        message: `确定要删除用户"${username}"吗？<br><br>此操作不可撤销。`,
+        submitText: '删除',
+        danger: true,
+        onConfirm: () => {
+            UserAPI.delete(id)
+                .then(() => {
+                    showToast(`用户"${username}"删除成功！`, 'success');
+                    loadUsersTable();
                 })
                 .catch(error => {
                     console.error('删除失败:', error);
