@@ -62,4 +62,7 @@ public interface StudentCourseClassService {
     List<StudentCourseClass> findByCourseClassIdAndStatus(Long courseClassId, String status);
 
     Long countEnrolledStudentsByCourseClassId(Long courseClassId);
+    
+    // 获取学生选修的课程列表（包含课程信息）
+    List<com.facial.recognition.dto.StudentCourseDTO> getStudentCourses(Long studentId);
 }

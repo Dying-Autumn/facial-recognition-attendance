@@ -11,7 +11,6 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.provider.MediaStore;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,7 +19,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.os.Bundle;
-
+import androidx.appcompat.app.AlertDialog;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -41,6 +40,17 @@ import com.google.android.gms.location.Priority;
 import com.google.android.gms.tasks.CancellationTokenSource;
 import com.google.android.material.button.MaterialButton;
 import com.example.studentattendanceterminal.ui.MeFragment;
+
+// 高德地图定位 SDK
+import com.amap.api.location.AMapLocation;
+import com.amap.api.location.AMapLocationClient;
+import com.amap.api.location.AMapLocationClientOption;
+import com.amap.api.location.AMapLocationListener;
+import com.amap.api.location.AMapLocationClientOption.AMapLocationMode;
+import com.amap.api.location.AMapLocationClientOption.AMapLocationPurpose;
+
+// 日志工具
+import com.example.studentattendanceterminal.utils.LogUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -64,6 +74,11 @@ public class HomeFragment extends Fragment {
     };
 
     private FusedLocationProviderClient fusedClient;
+    // 高德地图定位相关
+    private AMapLocationClient mLocationClient = null;
+    private AMapLocationClientOption mLocationOption = null;
+    private AMapLocationListener mLocationListener = null;
+    
     private double currentLat = 0.0;
     private double currentLon = 0.0;
     private boolean hasLocation = false;
@@ -92,6 +107,9 @@ public class HomeFragment extends Fragment {
         fusedClient = LocationServices.getFusedLocationProviderClient(requireContext());
         cameraLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), this::onCameraResult);
 
+        // 初始化高德地图定位SDK
+        initAMapLocation();
+
         // 加载课程到 Spinner
         loadCoursesToSpinner();
         // 进入页面时加载现有签到记录
@@ -116,6 +134,9 @@ public class HomeFragment extends Fragment {
                 requestPermissions(REQUIRED_PERMISSIONS, REQ_CODE_CHECKIN);
             }
         });
+
+        // 记录日志文件路径到日志中
+        LogUtil.i(TAG, "HomeFragment初始化完成，日志文件路径: " + LogUtil.getLogFilePath());
     }
 
     @Override
@@ -123,6 +144,108 @@ public class HomeFragment extends Fragment {
         super.onAttach(context);
         // 使用应用级 Context，避免 Fragment 生命周期导致的空指针
         appContext = context.getApplicationContext();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // 停止定位并释放资源
+        if (mLocationClient != null) {
+            mLocationClient.stopLocation(); // 停止定位
+            mLocationClient.onDestroy(); // 销毁定位客户端
+            mLocationClient = null;
+        }
+    }
+
+    /**
+     * 初始化高德地图定位SDK
+     */
+    private void initAMapLocation() {
+        try {
+            Context context = appContext != null ? appContext : requireContext().getApplicationContext();
+
+            // 初始化定位（隐私合规已在AttendanceApplication中设置）
+            mLocationClient = new AMapLocationClient(context);
+            LogUtil.i(TAG, "高德地图定位客户端初始化成功");
+
+            // 初始化定位参数
+            mLocationOption = new AMapLocationClientOption();
+            
+            // 设置定位场景为签到场景
+            mLocationOption.setLocationPurpose(AMapLocationPurpose.SignIn);
+            
+            // 设置定位模式为高精度模式
+            mLocationOption.setLocationMode(AMapLocationMode.Hight_Accuracy);
+            
+            // 获取一次定位结果
+            mLocationOption.setOnceLocation(true);
+            
+            // 获取最近3s内精度最高的一次定位结果
+            mLocationOption.setOnceLocationLatest(true);
+            
+            // 设置是否返回地址信息（默认返回地址信息）
+            mLocationOption.setNeedAddress(true);
+            
+            // 设置是否允许模拟位置,默认为false，不允许模拟位置
+            mLocationOption.setMockEnable(false);
+            
+            // 设置定位参数
+            mLocationClient.setLocationOption(mLocationOption);
+            
+            // 设置定位回调监听
+            mLocationListener = new AMapLocationListener() {
+                @Override
+                public void onLocationChanged(AMapLocation amapLocation) {
+                    if (amapLocation != null) {
+                        if (amapLocation.getErrorCode() == 0) {
+                            // 定位成功
+                            double latitude = amapLocation.getLatitude();
+                            double longitude = amapLocation.getLongitude();
+                            
+                            // 更新位置信息
+                            applyAMapLocation(latitude, longitude, amapLocation);
+                            
+                            // 定位成功后打开相机
+                            openCamera();
+                        } else {
+                            // 定位失败
+                            String errorInfo = "定位失败，错误码：" + amapLocation.getErrorCode() + ", 错误信息：" + amapLocation.getErrorInfo();
+                            LogUtil.e(TAG, errorInfo);
+                            showToast(errorInfo);
+                            // 定位失败后继续打开相机
+                            openCamera();
+                        }
+                    } else {
+                        LogUtil.e(TAG, "定位结果为空");
+                        showToast("定位结果为空");
+                        openCamera();
+                    }
+                }
+            };
+            
+            // 设置定位回调监听
+            mLocationClient.setLocationListener(mLocationListener);
+            
+        } catch (Exception e) {
+            LogUtil.e(TAG, "初始化高德定位SDK失败: " + e.getMessage(), e);
+            showToast("初始化定位服务失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 应用高德定位结果
+     */
+    private void applyAMapLocation(double latitude, double longitude, AMapLocation amapLocation) {
+        hasLocation = true;
+        currentLat = latitude;
+        currentLon = longitude;
+        
+        if (tvLocation != null) {
+            tvLocation.setText("定位：" + currentLat + ", " + currentLon);
+        }
+        
+        // 显示经纬度信息对话框
+        showLocationDialog(currentLat, currentLon, amapLocation);
     }
 
     private boolean hasAllPermissions() {
@@ -175,60 +298,23 @@ public class HomeFragment extends Fragment {
             return;
         }
 
-        // 检查 Google Play 服务可用性（部分设备/模拟器可能缺失）
-        int playSvc = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(requireContext());
-        if (playSvc != ConnectionResult.SUCCESS) {
-            // 回退到系统 LocationManager 的最近位置
-            Location fallback = null;
+        // 使用高德地图定位SDK进行定位
+        if (mLocationClient != null) {
             try {
-                fallback = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                if (fallback == null) fallback = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            } catch (SecurityException ignored) {}
-            if (fallback != null) applyLocation(fallback);
+                // 启动定位
+                mLocationClient.startLocation();
+                showToast("正在获取位置信息...");
+            } catch (Exception e) {
+                LogUtil.e(TAG, "启动高德定位失败: " + e.getMessage(), e);
+                showToast("启动定位失败: " + e.getMessage());
+                // 定位失败后继续打开相机
+                openCamera();
+            }
+        } else {
+            LogUtil.e(TAG, "高德定位客户端未初始化");
+            showToast("定位服务未初始化");
             openCamera();
-            return;
         }
-
-        int priority = ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                ? Priority.PRIORITY_HIGH_ACCURACY
-                : Priority.PRIORITY_BALANCED_POWER_ACCURACY;
-
-        CancellationTokenSource cts = new CancellationTokenSource();
-        fusedClient.getCurrentLocation(priority, cts.getToken())
-                .addOnSuccessListener(location -> {
-                    if (location != null) {
-                        applyLocation(location);
-                    } else {
-                        // 兜底：尝试拿到上次定位
-                        fusedClient.getLastLocation().addOnSuccessListener(loc -> {
-                            if (loc != null) applyLocation(loc);
-                            openCamera();
-                        }).addOnFailureListener(e -> {
-                            showToast("无法获取定位：" + e.getMessage());
-                            // 再次兜底：尝试 LocationManager 最近位置
-                            Location lmLast = null;
-                            try {
-                                lmLast = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                                if (lmLast == null) lmLast = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                            } catch (SecurityException ignored2) {}
-                            if (lmLast != null) applyLocation(lmLast);
-                            openCamera();
-                        });
-                        return;
-                    }
-                    openCamera();
-                })
-                .addOnFailureListener(e -> {
-                    showToast("定位失败：" + e.getMessage());
-                    // 兜底：LocationManager 最近位置
-                    Location lmLast = null;
-                    try {
-                        lmLast = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                        if (lmLast == null) lmLast = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                    } catch (SecurityException ignored3) {}
-                    if (lmLast != null) applyLocation(lmLast);
-                    openCamera();
-                });
     }
 
     private void applyLocation(@NonNull Location location) {
@@ -237,6 +323,70 @@ public class HomeFragment extends Fragment {
         currentLon = location.getLongitude();
         if (tvLocation != null) {
             tvLocation.setText("定位：" + currentLat + ", " + currentLon);
+        }
+        
+        // 显示经纬度信息对话框
+        showLocationDialog(currentLat, currentLon, null);
+    }
+    
+    /**
+     * 显示位置信息对话框
+     */
+    private void showLocationDialog(double latitude, double longitude, AMapLocation amapLocation) {
+        try {
+            Context ctx = appContext != null ? appContext : requireContext();
+            if (ctx == null) return;
+
+            StringBuilder message = new StringBuilder();
+            message.append("实际采集位置信息：\n\n");
+            message.append(String.format(Locale.getDefault(), "纬度：%.7f\n", latitude));
+            message.append(String.format(Locale.getDefault(), "经度：%.7f\n", longitude));
+
+            // 如果有高德定位结果，显示更多信息
+            if (amapLocation != null) {
+                message.append(String.format(Locale.getDefault(), "\n精度：%.2f米\n", amapLocation.getAccuracy()));
+                if (amapLocation.getAddress() != null && !amapLocation.getAddress().isEmpty()) {
+                    message.append("\n地址：").append(amapLocation.getAddress());
+                }
+                if (amapLocation.getCity() != null && !amapLocation.getCity().isEmpty()) {
+                    message.append("\n城市：").append(amapLocation.getCity());
+                }
+            }
+
+            new AlertDialog.Builder(requireContext())
+                .setTitle("位置信息")
+                .setMessage(message.toString())
+                .setPositiveButton("确定", null)
+                .setNegativeButton("查看日志", (dialog, which) -> showLogInfo())
+                .setCancelable(false)
+                .show();
+        } catch (Exception e) {
+            LogUtil.e(TAG, "显示位置对话框失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 显示日志文件信息
+     */
+    private void showLogInfo() {
+        try {
+            String logPath = LogUtil.getLogFilePath();
+            String logDir = LogUtil.getLogDirPath();
+
+            String message = "日志文件信息：\n\n" +
+                    "日志目录：\n" + logDir + "\n\n" +
+                    "日志文件：\n" + logPath + "\n\n" +
+                    "提示：可以使用ADB命令查看日志：\n" +
+                    "adb shell run-as com.example.studentattendanceterminal cat files/logs/attendance_log.txt";
+
+            new AlertDialog.Builder(requireContext())
+                .setTitle("日志信息")
+                .setMessage(message)
+                .setPositiveButton("确定", null)
+                .setCancelable(true)
+                .show();
+        } catch (Exception e) {
+            LogUtil.e(TAG, "显示日志信息失败: " + e.getMessage());
         }
     }
 
@@ -325,6 +475,53 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadCoursesToSpinner() {
+        Long studentId = getLoggedInStudentId();
+        if (studentId == null) {
+            // 如果未登录，显示空列表
+            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, new String[]{"请先登录"});
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerCourse.setAdapter(adapter);
+            return;
+        }
+        
+        // 从服务器获取学生选修的课程
+        com.example.studentattendanceterminal.network.ApiClient.getStudentService()
+            .getStudentCourses(studentId)
+            .enqueue(new retrofit2.Callback<java.util.List<com.example.studentattendanceterminal.models.StudentCourse>>() {
+                @Override
+                public void onResponse(retrofit2.Call<java.util.List<com.example.studentattendanceterminal.models.StudentCourse>> call, 
+                                     retrofit2.Response<java.util.List<com.example.studentattendanceterminal.models.StudentCourse>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        java.util.List<com.example.studentattendanceterminal.models.StudentCourse> serverCourses = response.body();
+                        // 转换为本地 Course 对象并保存到本地数据库
+                        Context ctx = appContext != null ? appContext : requireContext();
+                        AttendanceDbHelper db = AttendanceDbHelper.getInstance(ctx);
+                        java.util.List<AttendanceDbHelper.Course> localCourses = new java.util.ArrayList<>();
+                        for (com.example.studentattendanceterminal.models.StudentCourse sc : serverCourses) {
+                            // 检查课程是否已存在，避免重复插入
+                            long courseId = db.insertCourseIfNotExists(sc.getCourseName());
+                            localCourses.add(new AttendanceDbHelper.Course(courseId, sc.getCourseName()));
+                        }
+                        // 更新 Spinner
+                        android.widget.ArrayAdapter<AttendanceDbHelper.Course> adapter = 
+                            new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, localCourses);
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        spinnerCourse.setAdapter(adapter);
+                    } else {
+                        // 如果网络请求失败，使用本地数据
+                        loadCoursesFromLocal();
+                    }
+                }
+
+                @Override
+                public void onFailure(retrofit2.Call<java.util.List<com.example.studentattendanceterminal.models.StudentCourse>> call, Throwable t) {
+                    // 网络请求失败，使用本地数据
+                    loadCoursesFromLocal();
+                }
+            });
+    }
+    
+    private void loadCoursesFromLocal() {
         Context ctx = appContext != null ? appContext : requireContext();
         AttendanceDbHelper db = AttendanceDbHelper.getInstance(ctx);
         java.util.List<AttendanceDbHelper.Course> courses = db.getAllCourses();
@@ -370,10 +567,10 @@ public class HomeFragment extends Fragment {
             if (ctx != null) {
                 Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show();
             } else {
-                Log.w(TAG, "Toast context is null, msg=" + msg);
+                LogUtil.w(TAG, "Toast context is null, msg=" + msg);
             }
         } catch (Exception e) {
-            Log.e(TAG, "Toast error: " + e.getMessage());
+            LogUtil.e(TAG, "Toast error: " + e.getMessage());
         }
     }
 

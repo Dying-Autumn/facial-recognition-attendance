@@ -32,7 +32,8 @@ android {
 }
 
 dependencies {
-
+    // 包含 libs 目录下的所有 jar 文件
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
@@ -51,4 +52,5 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    
 }

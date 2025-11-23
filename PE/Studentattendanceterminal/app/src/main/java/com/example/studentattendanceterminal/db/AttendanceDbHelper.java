@@ -147,6 +147,20 @@ public class AttendanceDbHelper extends SQLiteOpenHelper {
         return db.insert(TABLE_COURSES, null, cv);
     }
 
+    public long insertCourseIfNotExists(String name) {
+        SQLiteDatabase db = getWritableDatabase();
+        // 先查询是否已存在
+        android.database.Cursor c = db.rawQuery("SELECT CourseID FROM " + TABLE_COURSES + " WHERE CourseName = ? LIMIT 1", new String[]{name});
+        if (c != null && c.moveToFirst()) {
+            long id = c.getLong(0);
+            c.close();
+            return id;
+        }
+        if (c != null) c.close();
+        // 不存在则插入
+        return insertCourse(name);
+    }
+
     private void seedCourses(SQLiteDatabase db) {
         db.execSQL("INSERT INTO " + TABLE_COURSES + "(CourseName) VALUES ('高等数学')");
         db.execSQL("INSERT INTO " + TABLE_COURSES + "(CourseName) VALUES ('大学英语')");
@@ -234,6 +248,12 @@ public class AttendanceDbHelper extends SQLiteOpenHelper {
             c.close();
         }
         return list;
+    }
+    
+    public java.util.List<Course> getCoursesByStudentId(Long studentId) {
+        // 这个方法暂时返回所有课程，因为本地数据库可能没有学生选课关联表
+        // 实际应该从服务器获取，这里作为备用
+        return getAllCourses();
     }
 
     public java.util.List<CheckinDisplay> getCheckinDisplayList() {

@@ -160,5 +160,12 @@ public class StudentCourseClassController {
             .getStudentEnrollmentHistory(studentId);
         return ResponseEntity.ok(enrollments);
     }
+    
+    // 获取学生选修的课程列表（包含课程信息）
+    @GetMapping("/student/{studentId}/courses")
+    public ResponseEntity<List<com.facial.recognition.dto.StudentCourseDTO>> getStudentCourses(@PathVariable Long studentId) {
+        List<com.facial.recognition.dto.StudentCourseDTO> courses = studentCourseClassService.getStudentCourses(studentId);
+        return ResponseEntity.ok(courses);
+    }
 }
 

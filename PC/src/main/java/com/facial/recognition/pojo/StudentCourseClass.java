@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "student_course_classes")
+@Table(name = "StudentCourseClass")
 @IdClass(StudentCourseClassId.class)
 public class StudentCourseClass implements Serializable {
     
@@ -17,9 +17,10 @@ public class StudentCourseClass implements Serializable {
     @Column(name = "ClassID", nullable = false)
     private Long classId; // 主键，外键
 
-    @Column(name = "enrollment_date")
+    @Column(name = "EnrollmentDate")
     private LocalDateTime enrollmentDate; // 选课时间
 
+    @Column(name = "Status")
     private String status; // 状态：ENROLLED, DROPPED, COMPLETED
 
     private Double finalGrade; // 最终成绩

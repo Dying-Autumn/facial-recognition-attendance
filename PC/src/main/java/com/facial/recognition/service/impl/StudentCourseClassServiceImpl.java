@@ -1,12 +1,18 @@
 package com.facial.recognition.service.impl;
 
+import com.facial.recognition.dto.StudentCourseDTO;
+import com.facial.recognition.pojo.Course;
+import com.facial.recognition.pojo.CourseClass;
 import com.facial.recognition.pojo.StudentCourseClass;
+import com.facial.recognition.repository.CourseClassRepository;
+import com.facial.recognition.repository.CourseRepository;
 import com.facial.recognition.repository.StudentCourseClassRepository;
 import com.facial.recognition.service.StudentCourseClassService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +22,12 @@ public class StudentCourseClassServiceImpl implements StudentCourseClassService 
 
     @Autowired
     private StudentCourseClassRepository studentCourseClassRepository;
+    
+    @Autowired
+    private CourseClassRepository courseClassRepository;
+    
+    @Autowired
+    private CourseRepository courseRepository;
 
     @Override
     public StudentCourseClass enrollStudent(Long studentId, Long classId) {
@@ -156,5 +168,51 @@ public class StudentCourseClassServiceImpl implements StudentCourseClassService 
     @Override
     public Long countEnrolledStudentsByCourseClassId(Long courseClassId) {
         return 0L;
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudentCourseDTO> getStudentCourses(Long studentId) {
+        // 查询学生选修的所有班级记录
+        List<StudentCourseClass> allEnrollments = studentCourseClassRepository.findByStudentId(studentId);
+        
+        List<StudentCourseDTO> result = new ArrayList<>();
+        
+        for (StudentCourseClass enrollment : allEnrollments) {
+            // 跳过已退课的记录（状态为0或"DROPPED"）
+            String status = enrollment.getStatus();
+            if (status != null && ("DROPPED".equals(status) || "0".equals(status))) {
+                continue;
+            }
+            
+            // 获取班级信息
+            Optional<CourseClass> courseClassOpt = courseClassRepository.findById(enrollment.getClassId());
+            if (courseClassOpt.isEmpty()) {
+                continue;
+            }
+            
+            CourseClass courseClass = courseClassOpt.get();
+            
+            // 获取课程信息
+            Optional<Course> courseOpt = courseRepository.findById(courseClass.getCourseId());
+            if (courseOpt.isEmpty()) {
+                continue;
+            }
+            
+            Course course = courseOpt.get();
+            
+            // 创建DTO
+            StudentCourseDTO dto = new StudentCourseDTO(
+                course.getCourseId(),
+                course.getCourseName(),
+                course.getCourseCode(),
+                courseClass.getClassId(),
+                courseClass.getClassName()
+            );
+            
+            result.add(dto);
+        }
+        
+        return result;
     }
 }
