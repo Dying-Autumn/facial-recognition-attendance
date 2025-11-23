@@ -109,17 +109,6 @@ public class StudentCourseClassServiceImpl implements StudentCourseClassService 
     }
 
     @Override
-    public StudentCourseClass updateGrade(Long id, Double finalGrade, String gradeLevel) {
-        Optional<StudentCourseClass> enrollment = studentCourseClassRepository.findById(id);
-        if (enrollment.isPresent()) {
-            enrollment.get().setFinalGrade(finalGrade);
-            enrollment.get().setGradeLevel(gradeLevel);
-            return studentCourseClassRepository.save(enrollment.get());
-        }
-        throw new RuntimeException("Enrollment not found with id: " + id);
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public Long countEnrolledStudentsByClassId(Long classId) {
         return studentCourseClassRepository.countEnrolledStudentsByClassId(classId);

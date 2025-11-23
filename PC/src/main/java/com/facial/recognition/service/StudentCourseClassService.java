@@ -34,11 +34,8 @@ public interface StudentCourseClassService {
     // 根据班级ID和状态查找选课记录
     List<StudentCourseClass> findByClassIdAndStatus(Long classId, String status);
     
-    // 更新选课状�?
+    // 更新选课状态
     StudentCourseClass updateStatus(Long id, String status);
-    
-    // 更新成绩
-    StudentCourseClass updateGrade(Long id, Double finalGrade, String gradeLevel);
     
     // 统计班级中的学生数量
     Long countEnrolledStudentsByClassId(Long classId);
