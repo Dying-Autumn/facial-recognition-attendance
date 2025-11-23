@@ -12,47 +12,40 @@ import java.util.Optional;
 @Repository
 public interface FunctionRepository extends JpaRepository<Function, Integer> {
     
-    // 鏍规嵁鍔熻兘浠ｇ爜鏌ユ壘鍔熻兘
+    // 根据功能代码查找功能
     Optional<Function> findByFunctionCode(String functionCode);
     
-    // 鏍规嵁鍔熻兘鍚嶇О鏌ユ壘鍔熻兘
+    // 根据功能名称查找功能
     List<Function> findByFunctionName(String functionName);
     
-    // 鏍规嵁鐘舵€佹煡鎵惧姛锟?
-    List<Function> findByStatus(String status);
+    // 根据是否激活查找功能
+    List<Function> findByIsActive(Boolean isActive);
     
-    // 鏍规嵁鐖跺姛鑳絀D鏌ユ壘瀛愬姛锟?
-    List<Function> findByParentId(Integer parentId);
-    
-    // 鏌ユ壘椤剁骇鍔熻兘锛堟病鏈夌埗鍔熻兘鐨勫姛鑳斤級
-    List<Function> findByParentIdIsNull();
-    
-    // 鏍规嵁URL鏌ユ壘鍔熻兘
+    // 根据URL查找功能
     List<Function> findByUrl(String url);
     
-    // 鏍规嵁HTTP鏂规硶鏌ユ壘鍔熻兘
+    // 根据HTTP方法查找功能
     List<Function> findByMethod(String method);
     
-    // 鏍规嵁鍔熻兘鍚嶇О妯＄硦鏌ヨ
+    // 根据功能名称模糊查询
     List<Function> findByFunctionNameContaining(String functionName);
     
-    // 鏍规嵁鐘舵€佸拰鐖跺姛鑳絀D鏌ユ壘鍔熻兘
-    List<Function> findByStatusAndParentId(String status, Integer parentId);
+    // 按排序顺序查找激活的功能
+    List<Function> findByIsActiveOrderBySortOrderAsc(Boolean isActive);
     
-    // 鎸夋帓搴忛『搴忔煡鎵惧姛锟?
-    List<Function> findByStatusOrderBySortOrderAsc(String status);
+    // 根据模块名称查找功能
+    List<Function> findByModuleName(String moduleName);
     
-    // 鑷畾涔夋煡璇細鏌ユ壘鐢ㄦ埛鏈夋潈闄愮殑鍔熻兘
-    @Query("SELECT DISTINCT fe FROM FunctionEntity fe " +
-           "JOIN RoleFunctionPermission rfp ON fe.functionId = rfp.functionId " +
-           "JOIN Role r ON rfp.roleId = r.roleId " +
-           "JOIN User u ON r.roleId = u.RoleID " +
-           "WHERE u.UserID = :userId AND rfp.granted = true AND fe.status = 'ACTIVE'")
+    // 自定义查询：查找用户有权限的功能
+    @Query("SELECT DISTINCT f FROM Function f, RoleFunctionPermission rfp, Role r, User u " +
+           "WHERE f.functionId = rfp.functionId " +
+           "AND rfp.roleId = r.roleId " +
+           "AND r.roleId = u.RoleID " +
+           "AND u.UserID = :userId AND (f.isActive = true OR f.isActive IS NULL)")
     List<Function> findFunctionsByUserId(@Param("userId") Integer userId);
     
-    // 鑷畾涔夋煡璇細鏌ユ壘瑙掕壊鐨勫姛鑳芥潈锟?
-    @Query("SELECT fe FROM FunctionEntity fe " +
-           "JOIN RoleFunctionPermission rfp ON fe.functionId = rfp.functionId " +
-           "WHERE rfp.roleId = :roleId AND rfp.granted = true AND fe.status = 'ACTIVE'")
+    // 自定义查询：查找角色的功能权限
+    @Query("SELECT f FROM Function f, RoleFunctionPermission rfp " +
+           "WHERE f.functionId = rfp.functionId AND rfp.roleId = :roleId")
     List<Function> findFunctionsByRoleId(@Param("roleId") Integer roleId);
 }

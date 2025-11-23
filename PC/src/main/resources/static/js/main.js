@@ -661,6 +661,40 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                     </div>
                 `;
+                setTimeout(initStatisticsPage, 100);
+                break;
+            case 'permission-assign':
+                content = `
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">角色权限分配</div>
+                            <button class="btn" onclick="loadPermissionAssignPage()">刷新</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="permission-role-select">选择角色 <span class="required">*</span></label>
+                                <select id="permission-role-select" onchange="onRoleSelected(this.value)">
+                                    <option value="">请选择角色</option>
+                                </select>
+                            </div>
+                            <div id="permission-content" style="display: none;">
+                                <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 4px;">
+                                    <h3 id="selected-role-name" style="margin: 0 0 10px 0;"></h3>
+                                    <p id="selected-role-desc" style="margin: 0; color: #666;"></p>
+                                </div>
+                                <div id="permission-tree" style="max-height: 600px; overflow-y: auto;">
+                                    <!-- 权限树将在这里动态生成 -->
+                                </div>
+                                <div style="margin-top: 20px; text-align: right;">
+                                    <button class="btn btn-secondary" onclick="selectAllPermissions()">全选</button>
+                                    <button class="btn btn-secondary" onclick="deselectAllPermissions()">全不选</button>
+                                    <button class="btn btn-accent" onclick="savePermissions()">保存权限</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                setTimeout(initPermissionAssignPage, 100);
                 break;
             default:
                 content = `
@@ -1732,3 +1766,352 @@ function initPublishTaskPage() {
         }
     });
 }
+
+// ========== 权限分配功能 ==========
+
+let currentRoleId = null;
+let allFunctions = [];
+let rolePermissions = new Set();
+
+// 初始化权限分配页面
+async function initPermissionAssignPage() {
+    await loadRolesForPermission();
+}
+
+// 加载角色列表到下拉框
+async function loadRolesForPermission() {
+    const select = document.getElementById('permission-role-select');
+    if (!select) return;
+    
+    try {
+        const roles = await RoleAPI.getAll();
+        select.innerHTML = '<option value="">请选择角色</option>' +
+            roles.map(role => `<option value="${role.roleId}">${role.roleName}</option>`).join('');
+    } catch (error) {
+        console.error('加载角色失败:', error);
+        showToast('加载角色失败', 'error');
+    }
+}
+
+// 角色选择变化事件
+async function onRoleSelected(roleId) {
+    if (!roleId) {
+        document.getElementById('permission-content').style.display = 'none';
+        currentRoleId = null;
+        return;
+    }
+    
+    currentRoleId = parseInt(roleId);
+    await loadPermissionData();
+}
+
+// 加载权限数据
+async function loadPermissionData() {
+    if (!currentRoleId) return;
+    
+    try {
+        // 加载所有功能
+        allFunctions = await FunctionAPI.getActive();
+        
+        // 加载角色已有的权限
+        const permissions = await PermissionAPI.getRolePermissions(currentRoleId);
+        rolePermissions = new Set(permissions.map(p => p.functionId));
+        
+        // 加载角色信息
+        const role = await RoleAPI.getById(currentRoleId);
+        document.getElementById('selected-role-name').textContent = `当前角色：${role.roleName}`;
+        document.getElementById('selected-role-desc').textContent = role.description || '暂无描述';
+        
+        // 渲染权限树
+        renderPermissionTree();
+        
+        // 显示权限内容
+        document.getElementById('permission-content').style.display = 'block';
+    } catch (error) {
+        console.error('加载权限数据失败:', error);
+        showToast('加载权限数据失败', 'error');
+    }
+}
+
+// 渲染权限树（按照用户提供的权限设计组织）
+function renderPermissionTree() {
+    const container = document.getElementById('permission-tree');
+    if (!container) return;
+    
+    // 按照模块分组权限
+    const modules = groupFunctionsByModule(allFunctions);
+    
+    let html = '';
+    
+    // 根据当前选择的角色显示对应的权限分组
+    if (currentRoleId === 3 || currentRoleId === 1) { // 学生或管理员
+        html += renderPermissionSection('学生权限', [
+            {
+                title: '课程相关',
+                permissions: [
+                    { code: 'course.view', name: '查看课程', desc: '只能查看自己已选的课程列表' },
+                    { code: 'course.view', name: '查看课程详情', desc: '只能查看自己课程的教学大纲、课件、作业等' },
+                    { code: 'course.add', name: '选课操作', desc: '在选课期内选择未满员的课程' },
+                    { code: 'course.delete', name: '退课操作', desc: '在规定时间内退选已选课程' }
+                ]
+            },
+            {
+                title: '个人信息',
+                permissions: [
+                    { code: 'user.edit', name: '修改个人信息', desc: '修改联系方式、密码等基础信息' },
+                    { code: 'dashboard.view', name: '查看个人课表', desc: '查看自己的课程时间安排' }
+                ]
+            }
+        ], 3);
+    }
+    
+    if (currentRoleId === 2 || currentRoleId === 1) { // 教师或管理员
+        html += renderPermissionSection('教师权限', [
+            {
+                title: '课程管理',
+                permissions: [
+                    { code: 'course.view', name: '查看所教课程', desc: '只能查看自己负责的课程' },
+                    { code: 'course.edit', name: '课程内容管理', desc: '管理自己课程的教学资料、课件、视频等' },
+                    { code: 'attendance_task.add', name: '发布通知', desc: '向自己课程的学生发布课程通知' },
+                    { code: 'course.edit', name: '设置课程信息', desc: '修改自己课程的基本信息（除课程代码等核心信息）' }
+                ]
+            },
+            {
+                title: '学生管理',
+                permissions: [
+                    { code: 'student.view', name: '查看选课学生', desc: '查看选择自己课程的学生名单' },
+                    { code: 'attendance.edit', name: '成绩管理', desc: '录入、修改、发布自己课程的学生成绩' },
+                    { code: 'attendance.view_all', name: '考勤记录', desc: '记录和管理学生的出勤情况' }
+                ]
+            }
+        ], 2);
+    }
+    
+    if (currentRoleId === 1) { // 管理员
+        html += renderPermissionSection('管理员权限', [
+            {
+                title: '用户管理',
+                permissions: [
+                    { code: 'user.view', name: '用户账户管理', desc: '创建、修改、禁用学生和教师账户' },
+                    { code: 'user.assign_role', name: '角色分配', desc: '为用户分配学生、教师或管理员角色' },
+                    { code: 'user.add', name: '批量操作', desc: '批量导入用户信息' }
+                ]
+            },
+            {
+                title: '课程体系管理',
+                permissions: [
+                    { code: 'course.add', name: '课程创建/删除', desc: '创建新课程或删除旧课程' },
+                    { code: 'class.add', name: '课程分配', desc: '将课程分配给特定教师授课' },
+                    { code: 'course.edit', name: '课程属性设置', desc: '设置课程代码、学分、容量等核心信息' }
+                ]
+            },
+            {
+                title: '系统管理',
+                permissions: [
+                    { code: 'permission.assign', name: '权限管理', desc: '定义和修改各角色的权限范围' },
+                    { code: 'dashboard.view', name: '数据维护', desc: '备份和恢复系统数据' },
+                    { code: 'dashboard.view', name: '系统监控', desc: '监控系统运行状态和用户活动' },
+                    { code: 'dashboard.view', name: '全局设置', desc: '设置学期、选课时间等系统参数' }
+                ]
+            }
+        ], 1);
+    }
+    
+    // 其他权限（从数据库加载的实际权限，按模块显示）
+    html += renderOtherPermissions(modules);
+    
+    container.innerHTML = html;
+}
+
+// 渲染权限分组
+function renderPermissionSection(title, groups, roleId) {
+    let html = `<div class="permission-section" style="margin-bottom: 30px;">
+        <h3 style="margin-bottom: 15px; color: var(--primary-color);">${title}</h3>`;
+    
+    groups.forEach(group => {
+        html += `<div class="permission-group" style="margin-bottom: 20px;">
+            <h4 style="margin-bottom: 10px; font-size: 1.1em; color: #666;">${group.title}</h4>
+            <div class="permission-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px;">`;
+        
+        group.permissions.forEach(perm => {
+            // 查找匹配的功能（可能多个功能有相同的代码，取第一个）
+            const matchingFunctions = allFunctions.filter(f => f.functionCode === perm.code);
+            const functionId = matchingFunctions.length > 0 ? matchingFunctions[0].functionId : null;
+            const isChecked = functionId && rolePermissions.has(functionId);
+            
+            // 如果找不到对应的功能，使用功能代码作为标识
+            const displayFunctionId = functionId || perm.code;
+            
+            html += `
+                <label class="permission-item" style="display: flex; align-items: flex-start; padding: 10px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: ${isChecked ? '#e8f5e9' : '#fff'};">
+                    <input type="checkbox" 
+                           class="permission-checkbox" 
+                           data-function-id="${displayFunctionId}" 
+                           data-function-code="${perm.code}"
+                           ${isChecked ? 'checked' : ''}
+                           ${!functionId ? 'disabled title="该功能在系统中不存在"' : ''}
+                           style="margin-right: 10px; margin-top: 3px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">${perm.name}${!functionId ? ' <span style="color: #999; font-size: 0.9em;">(未配置)</span>' : ''}</div>
+                        <div style="font-size: 0.9em; color: #666;">${perm.desc}</div>
+                    </div>
+                </label>
+            `;
+        });
+        
+        html += `</div></div>`;
+    });
+    
+    html += `</div>`;
+    return html;
+}
+
+// 渲染其他权限（从数据库加载）
+function renderOtherPermissions(modules) {
+    let html = '<div class="permission-section" style="margin-top: 30px;"><h3 style="margin-bottom: 15px; color: var(--primary-color);">其他功能权限</h3>';
+    
+    Object.keys(modules).sort().forEach(moduleName => {
+        html += `<div class="permission-group" style="margin-bottom: 20px;">
+            <h4 style="margin-bottom: 10px; font-size: 1.1em; color: #666;">${moduleName}</h4>
+            <div class="permission-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px;">`;
+        
+        modules[moduleName].forEach(func => {
+            const isChecked = rolePermissions.has(func.functionId);
+            html += `
+                <label class="permission-item" style="display: flex; align-items: flex-start; padding: 10px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: ${isChecked ? '#e8f5e9' : '#fff'};">
+                    <input type="checkbox" 
+                           class="permission-checkbox" 
+                           data-function-id="${func.functionId}" 
+                           data-function-code="${func.functionCode}"
+                           ${isChecked ? 'checked' : ''}
+                           style="margin-right: 10px; margin-top: 3px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">${func.functionName}</div>
+                        <div style="font-size: 0.9em; color: #666;">${func.description || func.functionCode}</div>
+                    </div>
+                </label>
+            `;
+        });
+        
+        html += `</div></div>`;
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+// 按模块分组功能
+function groupFunctionsByModule(functions) {
+    const modules = {};
+    functions.forEach(func => {
+        const moduleName = func.moduleName || '其他';
+        if (!modules[moduleName]) {
+            modules[moduleName] = [];
+        }
+        modules[moduleName].push(func);
+    });
+    return modules;
+}
+
+// 根据功能代码查找功能ID
+function findFunctionIdByCode(functionCode) {
+    const func = allFunctions.find(f => f.functionCode === functionCode);
+    return func ? func.functionId : null;
+}
+
+// 全选权限
+function selectAllPermissions() {
+    const checkboxes = document.querySelectorAll('.permission-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = true;
+        updatePermissionItemStyle(cb);
+    });
+}
+
+// 全不选权限
+function deselectAllPermissions() {
+    const checkboxes = document.querySelectorAll('.permission-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+        updatePermissionItemStyle(cb);
+    });
+}
+
+// 更新权限项样式
+function updatePermissionItemStyle(checkbox) {
+    const item = checkbox.closest('.permission-item');
+    if (item) {
+        item.style.background = checkbox.checked ? '#e8f5e9' : '#fff';
+    }
+}
+
+// 保存权限
+async function savePermissions() {
+    if (!currentRoleId) {
+        showToast('请先选择角色', 'warning');
+        return;
+    }
+    
+    const checkboxes = document.querySelectorAll('.permission-checkbox:not(:disabled)');
+    const selectedFunctionIds = [];
+    const unselectedFunctionIds = [];
+    
+    checkboxes.forEach(cb => {
+        const functionId = parseInt(cb.dataset.functionId);
+        if (!isNaN(functionId) && functionId > 0) {
+            if (cb.checked) {
+                selectedFunctionIds.push(functionId);
+            } else {
+                // 如果之前有权限但现在取消了，需要撤销
+                if (rolePermissions.has(functionId)) {
+                    unselectedFunctionIds.push(functionId);
+                }
+            }
+        }
+    });
+    
+    if (selectedFunctionIds.length === 0 && unselectedFunctionIds.length === 0) {
+        showToast('没有需要保存的权限变更', 'info');
+        return;
+    }
+    
+    try {
+        // 先撤销取消的权限
+        if (unselectedFunctionIds.length > 0) {
+            await PermissionAPI.revokePermissions(currentRoleId, unselectedFunctionIds);
+        }
+        
+        // 再分配新选择的权限（只分配新增的，已存在的不会重复分配）
+        if (selectedFunctionIds.length > 0) {
+            // 过滤掉已经存在的权限
+            const newFunctionIds = selectedFunctionIds.filter(id => !rolePermissions.has(id));
+            if (newFunctionIds.length > 0) {
+                await PermissionAPI.assignPermissions(currentRoleId, newFunctionIds);
+            }
+        }
+        
+        showToast('权限保存成功！', 'success');
+        
+        // 重新加载权限数据以更新界面
+        await loadPermissionData();
+    } catch (error) {
+        console.error('保存权限失败:', error);
+        showToast('保存权限失败：' + (error.message || '未知错误'), 'error');
+    }
+}
+
+// 重新加载权限分配页面
+function loadPermissionAssignPage() {
+    if (currentRoleId) {
+        loadPermissionData();
+    } else {
+        initPermissionAssignPage();
+    }
+}
+
+// 绑定权限复选框变化事件
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('permission-checkbox')) {
+        updatePermissionItemStyle(e.target);
+    }
+});

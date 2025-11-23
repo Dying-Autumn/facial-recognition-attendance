@@ -224,3 +224,64 @@ class AttendanceTaskAPI {
     }
 }
 
+// 功能权限API
+class FunctionAPI {
+    // 获取所有功能
+    static getAll() {
+        return API.get('/functions');
+    }
+
+    // 获取所有激活的功能
+    static getActive() {
+        return API.get('/functions/active');
+    }
+
+    // 根据ID获取功能
+    static getById(id) {
+        return API.get(`/functions/${id}`);
+    }
+
+    // 根据功能代码获取功能
+    static getByCode(functionCode) {
+        return API.get(`/functions/code/${functionCode}`);
+    }
+
+    // 根据角色ID获取该角色的所有功能权限
+    static getByRoleId(roleId) {
+        return API.get(`/functions/role/${roleId}`);
+    }
+}
+
+// 权限分配API
+class PermissionAPI {
+    // 获取角色的所有权限
+    static getRolePermissions(roleId) {
+        return API.get(`/permissions/role/${roleId}`);
+    }
+
+    // 为角色分配单个权限
+    static assignPermission(roleId, functionId) {
+        return API.post(`/permissions/role/${roleId}/function/${functionId}`);
+    }
+
+    // 撤销角色的单个权限
+    static revokePermission(roleId, functionId) {
+        return API.delete(`/permissions/role/${roleId}/function/${functionId}`);
+    }
+
+    // 批量分配权限
+    static assignPermissions(roleId, functionIds) {
+        return API.post(`/permissions/role/${roleId}/assign`, { functionIds });
+    }
+
+    // 批量撤销权限
+    static revokePermissions(roleId, functionIds) {
+        return API.post(`/permissions/role/${roleId}/revoke`, { functionIds });
+    }
+
+    // 检查角色是否有某个权限
+    static hasPermission(roleId, functionId) {
+        return API.get(`/permissions/role/${roleId}/function/${functionId}/check`);
+    }
+}
+

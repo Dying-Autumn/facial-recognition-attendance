@@ -21,8 +21,17 @@ spring:
   jpa:
     hibernate:
       naming:
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        # 使用自定义命名策略，保持表名和列名大小写不变，与数据库中的实际名称一致
+        physical-strategy: com.facial.recognition.config.CustomPhysicalNamingStrategy
+        # 禁用自动命名转换，保持@Table和@Column中指定的名称
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
     show-sql: true
+    properties:
+      hibernate:
+        # 格式化SQL输出
+        format_sql: true
+        # 确保表名和列名大小写敏感（MySQL需要）
+        globally_quoted_identifiers: false
 
 # MyBatis配置
 mybatis:

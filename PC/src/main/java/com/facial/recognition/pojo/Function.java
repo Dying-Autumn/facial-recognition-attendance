@@ -3,49 +3,45 @@ package com.facial.recognition.pojo;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "function_entities")
+@Table(name = "Function")
 public class Function {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "FunctionID")
     private Integer functionId;
 
-    @Column(nullable = false)
+    @Column(name = "FunctionName", nullable = false)
     private String functionName; // 功能名称
 
+    @Column(name = "Description")
     private String description; // 功能描述
 
-    @Column(name = "function_code", unique = true)
+    @Column(name = "FunctionCode", unique = true)
     private String functionCode; // 功能代码
+    
+    @Column(name = "ModuleName")
+    private String moduleName; // 模块名称
 
     private String url; // 功能URL
 
     private String method; // HTTP方法
 
-    @Column(name = "parent_id")
-    private Integer parentId; // 父功能ID
-
+    @Column(name = "SortOrder")
     private Integer sortOrder; // 排序
 
-    private String icon; // 图标
+    @Column(name = "IsActive")
+    private Boolean isActive; // 是否启用
 
-    @Column(name = "created_time")
+    @Column(name = "CreatedDate")
     private java.time.LocalDateTime createdTime; // 创建时间
-
-    @Column(name = "updated_time")
-    private java.time.LocalDateTime updatedTime; // 更新时间
-
-    private String status; // 状态：ACTIVE, INACTIVE
 
     public Function() {}
 
-    public Function(String functionName, String functionCode, String url) {
+    public Function(String functionName, String functionCode) {
         this.functionName = functionName;
         this.functionCode = functionCode;
-        this.url = url;
         this.createdTime = java.time.LocalDateTime.now();
-        this.updatedTime = java.time.LocalDateTime.now();
-        this.status = "ACTIVE";
+        this.isActive = true;
     }
 
     // Getters and Setters
@@ -61,28 +57,16 @@ public class Function {
     public String getFunctionCode() { return functionCode; }
     public void setFunctionCode(String functionCode) { this.functionCode = functionCode; }
 
-    public String getUrl() { return url; }
-    public void setUrl(String url) { this.url = url; }
-
-    public String getMethod() { return method; }
-    public void setMethod(String method) { this.method = method; }
-
-    public Integer getParentId() { return parentId; }
-    public void setParentId(Integer parentId) { this.parentId = parentId; }
+    public String getModuleName() { return moduleName; }
+    public void setModuleName(String moduleName) { this.moduleName = moduleName; }
 
     public Integer getSortOrder() { return sortOrder; }
     public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
 
-    public String getIcon() { return icon; }
-    public void setIcon(String icon) { this.icon = icon; }
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 
     public java.time.LocalDateTime getCreatedTime() { return createdTime; }
     public void setCreatedTime(java.time.LocalDateTime createdTime) { this.createdTime = createdTime; }
-
-    public java.time.LocalDateTime getUpdatedTime() { return updatedTime; }
-    public void setUpdatedTime(java.time.LocalDateTime updatedTime) { this.updatedTime = updatedTime; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
 }
 

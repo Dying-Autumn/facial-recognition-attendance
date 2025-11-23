@@ -37,17 +37,16 @@ public interface FunctionEntityRepository extends JpaRepository<FunctionEntity, 
     List<FunctionEntity> findByFunctionNameAndSubsystem(String functionName, String subsystem);
     
     // 鑷畾涔夋煡璇細鏌ユ壘鐢ㄦ埛鏈夋潈闄愮殑鍔熻兘
-    @Query("SELECT DISTINCT fe FROM FunctionEntity fe " +
-           "JOIN RoleFunctionPermission rfp ON fe.functionId = rfp.functionId " +
-           "JOIN Role r ON rfp.roleId = r.roleId " +
-           "JOIN User u ON r.roleId = u.RoleID " +
-           "WHERE u.UserID = :userId AND rfp.granted = true AND fe.status = 'ACTIVE'")
+    @Query("SELECT DISTINCT fe FROM FunctionEntity fe, RoleFunctionPermission rfp, Role r, User u " +
+           "WHERE fe.functionId = rfp.functionId " +
+           "AND rfp.roleId = r.roleId " +
+           "AND r.roleId = u.RoleID " +
+           "AND u.UserID = :userId AND fe.status = 'ACTIVE'")
     List<FunctionEntity> findFunctionsByUserId(@Param("userId") Integer userId);
     
     // 鑷畾涔夋煡璇細鏌ユ壘瑙掕壊鐨勫姛鑳芥潈锟?
-    @Query("SELECT fe FROM FunctionEntity fe " +
-           "JOIN RoleFunctionPermission rfp ON fe.functionId = rfp.functionId " +
-           "WHERE rfp.roleId = :roleId AND rfp.granted = true AND fe.status = 'ACTIVE'")
+    @Query("SELECT fe FROM FunctionEntity fe, RoleFunctionPermission rfp " +
+           "WHERE fe.functionId = rfp.functionId AND rfp.roleId = :roleId AND fe.status = 'ACTIVE'")
     List<FunctionEntity> findFunctionsByRoleId(@Param("roleId") Integer roleId);
     
     // 鑷畾涔夋煡璇細鏍规嵁瀛愮郴缁熺粺璁″姛鑳芥暟锟?

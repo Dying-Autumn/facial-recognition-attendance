@@ -18,35 +18,19 @@ public interface RoleFunctionPermissionRepository extends JpaRepository<RoleFunc
     // 閺嶈宓侀崝鐔诲厴ID閺屻儲澹橀弶鍐
     List<RoleFunctionPermission> findByFunctionId(Integer functionId);
     
-    // 閺嶈宓佺憴鎺曞ID閸滃苯濮涢懗绲€D閺屻儲澹橀弶鍐
+    // 根据角色ID和功能ID查找权限
     Optional<RoleFunctionPermission> findByRoleIdAndFunctionId(Integer roleId, Integer functionId);
     
-    // 閺嶈宓侀弶鍐缁鐎烽弻銉﹀閺夊啴妾?
-    List<RoleFunctionPermission> findByPermissionType(String permissionType);
-    
-    // 閺嶈宓侀幒鍫熸綀閻樿埖鈧焦鐓￠幍鐐綀閿?
-    List<RoleFunctionPermission> findByGranted(Boolean granted);
-    
-    // 閺嶈宓佺憴鎺曞ID閸滃本宸块弶鍐Ц閹焦鐓￠幍鐐綀閿?
-    List<RoleFunctionPermission> findByRoleIdAndGranted(Integer roleId, Boolean granted);
-    
-    // 閺嶈宓侀崝鐔诲厴ID閸滃本宸块弶鍐Ц閹焦鐓￠幍鐐綀閿?
-    List<RoleFunctionPermission> findByFunctionIdAndGranted(Integer functionId, Boolean granted);
-    
-    // 閺嶈宓佺憴鎺曞ID閵嗕礁濮涢懗绲€D閸滃本娼堥梽鎰閸ㄥ鐓￠幍鐐綀閿?
-    Optional<RoleFunctionPermission> findByRoleIdAndFunctionIdAndPermissionType(
-        Integer roleId, Integer functionId, String permissionType);
-    
-    // 閼奉亜鐣炬稊澶嬬叀鐠囶澁绱板Λ鈧弻銉ф暏閹撮攱妲搁崥锔芥箒閻楃懓鐣鹃崝鐔诲厴閻ㄥ嫭娼堥敓?
+    // 查找用户对特定功能的权限（如果存在记录就表示有权限）
     @Query("SELECT rfp FROM RoleFunctionPermission rfp " +
            "JOIN User u ON rfp.roleId = u.RoleID " +
-           "WHERE u.UserID = :userId AND rfp.functionId = :functionId AND rfp.granted = true")
+           "WHERE u.UserID = :userId AND rfp.functionId = :functionId")
     List<RoleFunctionPermission> findUserPermissionsForFunction(
         @Param("userId") Integer userId, @Param("functionId") Integer functionId);
     
-    // 閼奉亜鐣炬稊澶嬬叀鐠囶澁绱伴懢宄板絿鐟欐帟澹婇惃鍕閺堝娼堥敓?
+    // 查找角色的所有权限（如果存在记录就表示已授权）
     @Query("SELECT rfp FROM RoleFunctionPermission rfp " +
-           "WHERE rfp.roleId = :roleId AND rfp.granted = true")
+           "WHERE rfp.roleId = :roleId")
     List<RoleFunctionPermission> findGrantedPermissionsByRoleId(@Param("roleId") Integer roleId);
     
     // 閼奉亜鐣炬稊澶嬬叀鐠囶澁绱伴懢宄板絿閸旂喕鍏橀惃鍕閺堝娼堥梽鎰瀻閿?
