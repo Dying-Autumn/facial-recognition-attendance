@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 @Transactional
@@ -117,5 +119,57 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
             return currentTime.isAfter(task.get().getEndTime());
         }
         return true;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Long getClassAttendanceTaskCount(Long courseClassId) {
+        return attendanceTaskRepository.countByCourseClassId(courseClassId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Long getTeacherAttendanceTaskCount(Long teacherId) {
+        return attendanceTaskRepository.countByTeacherId(teacherId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getClassAttendanceTaskStatistics(Long courseClassId) {
+        List<AttendanceTask> tasks = attendanceTaskRepository.findByCourseClassId(courseClassId);
+        Map<String, Object> statistics = new HashMap<>();
+
+        statistics.put("totalTasks", tasks.size());
+        statistics.put("activeTasks", tasks.stream()
+            .filter(task -> isTaskActive(task.getTaskId(), LocalDateTime.now()))
+            .count());
+        statistics.put("expiredTasks", tasks.stream()
+            .filter(task -> isTaskExpired(task.getTaskId(), LocalDateTime.now()))
+            .count());
+        statistics.put("upcomingTasks", tasks.stream()
+            .filter(task -> LocalDateTime.now().isBefore(task.getStartTime()))
+            .count());
+
+        return statistics;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getTeacherAttendanceTaskStatistics(Long teacherId) {
+        List<AttendanceTask> tasks = attendanceTaskRepository.findByTeacherId(teacherId);
+        Map<String, Object> statistics = new HashMap<>();
+
+        statistics.put("totalTasks", tasks.size());
+        statistics.put("activeTasks", tasks.stream()
+            .filter(task -> isTaskActive(task.getTaskId(), LocalDateTime.now()))
+            .count());
+        statistics.put("expiredTasks", tasks.stream()
+            .filter(task -> isTaskExpired(task.getTaskId(), LocalDateTime.now()))
+            .count());
+        statistics.put("upcomingTasks", tasks.stream()
+            .filter(task -> LocalDateTime.now().isBefore(task.getStartTime()))
+            .count());
+
+        return statistics;
     }
 }

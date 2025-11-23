@@ -56,6 +56,20 @@ public class UserService implements IUserService {
 
     @Override
     public void delete(Integer id) {
+        // 检查是否存在关联的学生记录
+        Optional<Student> student = studentRepository.findByUserId(id);
+        
+        if (student.isPresent()) {
+            throw new IllegalStateException(
+                "无法删除用户：该用户还有关联的学生记录。请先删除或处理学生记录。"
+            );
+        }
+        
+        // 检查用户是否存在
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("User not found with id: " + id);
+        }
+        
         userRepository.deleteById(id);
     }
 }

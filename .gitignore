@@ -33,3 +33,5 @@ build/
 .vscode/
 *.puml
 /PC/logs
+PC/logs/application.log
+/PC/logs

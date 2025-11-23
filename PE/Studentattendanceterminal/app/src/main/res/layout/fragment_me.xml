@@ -99,7 +99,15 @@
             android:text="学号：2021001"
             android:gravity="center"
             android:textSize="16sp"
-            android:paddingBottom="24dp" />
+            android:paddingBottom="16dp" />
+        
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_view_logs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="查看日志"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_marginBottom="8dp" />
             
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_logout"

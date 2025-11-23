@@ -32,6 +32,18 @@ spring:
         format_sql: true
         # 确保表名和列名大小写敏感（MySQL需要）
         globally_quoted_identifiers: false
+  
+  # DevTools 配置 - 开发工具热重载
+  devtools:
+    restart:
+      enabled: true  # 启用自动重启
+      # 排除不需要重启的资源（静态资源等）
+      exclude: static/**,public/**,templates/**,META-INF/maven/**,META-INF/resources/**
+      # 添加需要监控的额外路径
+      additional-paths: src/main/java
+    livereload:
+      enabled: true  # 启用LiveReload（浏览器自动刷新）
+      port: 35729    # LiveReload服务器端口
 
 # MyBatis配置
 mybatis:

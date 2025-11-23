@@ -3,21 +3,23 @@ package com.facial.recognition.pojo;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "courses")
+@Table(name = "Course")
 public class Course {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "CourceID") // 主键CourceID
+    @Column(name = "CourseID")
     private Long courseId;
 
-    @Column(nullable = false)
+    @Column(name = "CourseName", nullable = false)
     private String courseName;
 
-    @Column(unique = true, nullable = false)
+    @Column(name = "CourseCode", unique = true, nullable = false)
     private String courseCode; // 课程编号
 
+    @Column(name = "Credits")
     private Double credits; // 学分
 
+    @Column(name = "Semester")
     private String semester; // 开课学期，例如 2025-秋
 
     public Course() {}

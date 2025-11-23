@@ -16,16 +16,32 @@ class API {
         try {
             const response = await fetch(`${API_BASE_URL}${url}`, config);
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
             // 如果是204 No Content，直接返回
             if (response.status === 204) {
                 return null;
             }
             
-            return await response.json();
+            // 尝试解析响应体（可能是JSON错误信息）
+            let responseData = null;
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                try {
+                    responseData = await response.json();
+                } catch (e) {
+                    // 如果解析失败，忽略
+                }
+            }
+            
+            if (!response.ok) {
+                // 如果有错误响应体，提取错误信息
+                const errorMessage = responseData?.message || responseData?.error || `HTTP error! status: ${response.status}`;
+                const error = new Error(errorMessage);
+                error.status = response.status;
+                error.response = responseData;
+                throw error;
+            }
+            
+            return responseData;
         } catch (error) {
             console.error('API请求失败:', error);
             throw error;
@@ -221,6 +237,73 @@ class AttendanceTaskAPI {
     // 删除考勤任务
     static delete(id) {
         return API.delete(`/attendance-tasks/${id}`);
+    }
+
+    // 根据班级ID获取考勤任务
+    static getByCourseClassId(courseClassId) {
+        return API.get(`/attendance-tasks/class/${courseClassId}`);
+    }
+
+    // 获取班级考勤任务统计
+    static getClassStatistics(courseClassId) {
+        return API.get(`/attendance-tasks/class/${courseClassId}/statistics`);
+    }
+
+    // 获取教师考勤任务统计
+    static getTeacherStatistics(teacherId) {
+        return API.get(`/attendance-tasks/teacher/${teacherId}/statistics`);
+    }
+}
+
+// ========== 学生选课API ==========
+
+class StudentCourseAPI {
+    // 获取学生可选课程列表
+    static getAvailableCourses(studentId) {
+        return API.get(`/student-course-classes/student/${studentId}/available-courses`);
+    }
+
+    // 获取学生已选课程列表
+    static getStudentCourses(studentId) {
+        return API.get(`/student-course-classes/student/${studentId}/courses`);
+    }
+
+    // 获取学生已选课程历史
+    static getStudentCourseHistory(studentId) {
+        return API.get(`/student-course-classes/student/${studentId}`);
+    }
+
+    // 单个选课
+    static enroll(studentId, classId) {
+        return API.post(`/student-course-classes/enroll?studentId=${studentId}&courseClassId=${classId}`);
+    }
+
+    // 退课
+    static drop(studentId, classId) {
+        return API.post(`/student-course-classes/drop?studentId=${studentId}&courseClassId=${classId}`);
+    }
+
+    // 批量选课
+    static batchEnroll(studentId, classIds) {
+        return API.post('/student-course-classes/batch-enroll', {
+            studentId: studentId,
+            classIds: classIds
+        });
+    }
+
+    // 检查选课时间冲突
+    static checkTimeConflict(studentId, classId) {
+        return API.get(`/student-course-classes/check-conflict?studentId=${studentId}&classId=${classId}`);
+    }
+
+    // 检查课程容量
+    static checkCapacity(classId) {
+        return API.get(`/student-course-classes/class/${classId}/capacity`);
+    }
+
+    // 获取课程推荐
+    static getRecommendedCourses(studentId) {
+        return API.get(`/student-course-classes/student/${studentId}/recommended-courses`);
     }
 }
 

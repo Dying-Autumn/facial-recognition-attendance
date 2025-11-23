@@ -3,6 +3,7 @@ package com.facial.recognition.service.impl;
 import com.facial.recognition.pojo.Student;
 import com.facial.recognition.pojo.User;
 import com.facial.recognition.repository.StudentRepository;
+import com.facial.recognition.repository.StudentCourseClassRepository;
 import com.facial.recognition.repository.UserRepository;
 import com.facial.recognition.service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import com.facial.recognition.pojo.StudentCourseClass;
 
 @Service
 @Transactional
@@ -21,7 +23,12 @@ public class StudentServiceImpl implements StudentService {
     private StudentRepository studentRepository;
     
     @Autowired
-    private UserRepository userRepository;@Override
+    private UserRepository userRepository;
+    
+    @Autowired
+    private StudentCourseClassRepository studentCourseClassRepository;
+    
+    @Override
     public Student createStudent(Student student) {
         // 妫€鏌ュ鍙锋槸鍚﹀凡瀛樺湪
         studentRepository.findByStudentNumber(student.getStudentNumber())
@@ -98,6 +105,21 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public void deleteStudent(Long studentId) {
+        // 检查是否存在选课记录
+        List<com.facial.recognition.pojo.StudentCourseClass> enrollments = 
+            studentCourseClassRepository.findByStudentId(studentId);
+        
+        if (!enrollments.isEmpty()) {
+            throw new IllegalStateException(
+                "无法删除学生：该学生还有 " + enrollments.size() + " 条选课记录。请先删除或处理选课记录。"
+            );
+        }
+        
+        // 检查学生是否存在
+        if (!studentRepository.existsById(studentId)) {
+            throw new RuntimeException("Student not found with id: " + studentId);
+        }
+        
         studentRepository.deleteById(studentId);
     }
 

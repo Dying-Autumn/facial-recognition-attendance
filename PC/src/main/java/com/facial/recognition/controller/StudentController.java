@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -27,6 +29,9 @@ public class StudentController {
     // 根据ID获取学生
     @GetMapping("/{id}")
     public ResponseEntity<Student> getStudentById(@PathVariable Long id) {
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
         Optional<Student> student = studentService.findById(id);
         return student.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -61,9 +66,14 @@ public class StudentController {
     // 更新学生信息
     @PutMapping("/{id}")
     public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody Student student) {
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
         try {
             Student updated = studentService.updateStudent(id, student);
             return ResponseEntity.ok(updated);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).build(); // Conflict
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
@@ -71,11 +81,28 @@ public class StudentController {
 
     // 删除学生
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteStudent(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> deleteStudent(@PathVariable Long id) {
+        if (id == null || id <= 0) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "无效的学生ID");
+            return ResponseEntity.badRequest().body(response);
+        }
         try {
             studentService.deleteStudent(id);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "学生删除成功");
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(409).body(response); // Conflict
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
             return ResponseEntity.notFound().build();
         }
     }

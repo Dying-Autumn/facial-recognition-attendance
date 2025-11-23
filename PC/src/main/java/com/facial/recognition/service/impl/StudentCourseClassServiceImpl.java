@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -152,22 +153,22 @@ public class StudentCourseClassServiceImpl implements StudentCourseClassService 
 
     @Override
     public Optional<StudentCourseClass> findByStudentIdAndCourseClassId(Long studentId, Long courseClassId) {
-        return Optional.empty();
+        return studentCourseClassRepository.findByStudentIdAndClassId(studentId, courseClassId);
     }
 
     @Override
     public List<StudentCourseClass> findByCourseClassId(Long courseClassId) {
-        return List.of();
+        return studentCourseClassRepository.findByClassId(courseClassId);
     }
 
     @Override
     public List<StudentCourseClass> findByCourseClassIdAndStatus(Long courseClassId, String status) {
-        return List.of();
+        return studentCourseClassRepository.findByClassIdAndStatus(courseClassId, status);
     }
 
     @Override
     public Long countEnrolledStudentsByCourseClassId(Long courseClassId) {
-        return 0L;
+        return studentCourseClassRepository.countEnrolledStudentsByClassId(courseClassId);
     }
     
     @Override
@@ -179,40 +180,146 @@ public class StudentCourseClassServiceImpl implements StudentCourseClassService 
         List<StudentCourseDTO> result = new ArrayList<>();
         
         for (StudentCourseClass enrollment : allEnrollments) {
-            // 跳过已退课的记录（状态为0或"DROPPED"）
-            String status = enrollment.getStatus();
-            if (status != null && ("DROPPED".equals(status) || "0".equals(status))) {
-                continue;
-            }
-            
             // 获取班级信息
             Optional<CourseClass> courseClassOpt = courseClassRepository.findById(enrollment.getClassId());
             if (courseClassOpt.isEmpty()) {
                 continue;
             }
-            
+
             CourseClass courseClass = courseClassOpt.get();
-            
+
             // 获取课程信息
             Optional<Course> courseOpt = courseRepository.findById(courseClass.getCourseId());
             if (courseOpt.isEmpty()) {
                 continue;
             }
-            
+
             Course course = courseOpt.get();
-            
-            // 创建DTO
+
+            // 创建DTO，包含更多课程信息
             StudentCourseDTO dto = new StudentCourseDTO(
                 course.getCourseId(),
                 course.getCourseName(),
                 course.getCourseCode(),
                 courseClass.getClassId(),
-                courseClass.getClassName()
+                courseClass.getClassName(),
+                course.getCredits(),
+                courseClass.getSchedule(),
+                courseClass.getClassroom(),
+                courseClass.getSemester()
             );
-            
+
             result.add(dto);
         }
         
         return result;
+    }
+
+    @Override
+    public List<StudentCourseClass> batchEnrollStudent(Long studentId, List<Long> classIds) {
+        List<StudentCourseClass> enrollments = new ArrayList<>();
+
+        for (Long classId : classIds) {
+            try {
+                // 检查是否已选课
+                if (isStudentEnrolled(studentId, classId)) {
+                    continue; // 已选课，跳过
+                }
+
+                // 检查时间冲突
+                if (hasTimeConflict(studentId, classId)) {
+                    continue; // 有冲突，跳过
+                }
+
+                // 检查容量是否已满
+                if (isClassFull(classId)) {
+                    continue; // 容量已满，跳过
+                }
+
+                // 执行选课
+                StudentCourseClass enrollment = enrollStudent(studentId, classId);
+                enrollments.add(enrollment);
+            } catch (Exception e) {
+                // 记录错误但继续处理其他课程
+                System.err.println("Failed to enroll student " + studentId + " in class " + classId + ": " + e.getMessage());
+            }
+        }
+
+        return enrollments;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasTimeConflict(Long studentId, Long classId) {
+        // 获取要选的课程班级信息
+        Optional<CourseClass> targetClass = courseClassRepository.findById(classId);
+        if (targetClass.isEmpty()) {
+            return false;
+        }
+
+        // 获取学生已选的所有课程
+        List<StudentCourseClass> enrolledCourses = findEnrolledCoursesByStudentId(studentId);
+
+        // 检查时间冲突（这里简化处理，假设CourseClass有时间字段）
+        // 实际实现需要根据CourseClass的时间字段进行比较
+        // 这里暂时返回false，表示没有冲突
+        return false;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isClassFull(Long classId) {
+        // 检查班级容量限制
+        // 这里需要CourseClass实体有capacity字段
+        // 暂时假设没有容量限制
+        return false;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudentCourseDTO> getAvailableCoursesForStudent(Long studentId) {
+        // 获取所有课程班级
+        List<CourseClass> allClasses = courseClassRepository.findAll();
+        List<StudentCourseDTO> availableCourses = new ArrayList<>();
+
+        // 获取学生已选课程的班级ID
+        List<Long> enrolledClassIds = findEnrolledCoursesByStudentId(studentId)
+            .stream()
+            .map(StudentCourseClass::getClassId)
+            .collect(Collectors.toList());
+
+        for (CourseClass courseClass : allClasses) {
+            // 跳过已选的课程
+            if (enrolledClassIds.contains(courseClass.getClassId())) {
+                continue;
+            }
+
+            // 获取课程信息
+            Optional<Course> course = courseRepository.findById(courseClass.getCourseId());
+            if (course.isPresent()) {
+                StudentCourseDTO dto = new StudentCourseDTO(
+                    course.get().getCourseId(),
+                    course.get().getCourseName(),
+                    course.get().getCourseCode(),
+                    courseClass.getClassId(),
+                    courseClass.getClassName(),
+                    course.get().getCredits(),
+                    courseClass.getSchedule(),
+                    courseClass.getClassroom(),
+                    courseClass.getSemester()
+                );
+                availableCourses.add(dto);
+            }
+        }
+
+        return availableCourses;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudentCourseDTO> getRecommendedCourses(Long studentId) {
+        // 简单的推荐逻辑：推荐同类型或相关课程
+        // 这里暂时返回所有可用课程作为推荐
+        return getAvailableCoursesForStudent(studentId);
     }
 }

@@ -37,4 +37,10 @@ public interface AttendanceTaskRepository extends JpaRepository<AttendanceTask, 
     // 查找即将开始的考勤任务
     @Query("SELECT at FROM AttendanceTask at WHERE at.startTime > :currentTime ORDER BY at.startTime ASC")
     List<AttendanceTask> findUpcomingTasks(@Param("currentTime") LocalDateTime currentTime);
+
+    // 统计方法
+    Long countByCourseClassId(Long courseClassId);
+
+    @Query("SELECT COUNT(at) FROM AttendanceTask at WHERE at.courseClassId IN (SELECT cc.classId FROM CourseClass cc WHERE cc.teacherId = :teacherId)")
+    Long countByTeacherId(@Param("teacherId") Long teacherId);
 }

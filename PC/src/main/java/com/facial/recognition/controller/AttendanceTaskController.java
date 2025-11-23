@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/attendance-tasks")
@@ -119,5 +120,35 @@ public class AttendanceTaskController {
         LocalDateTime currentTime = LocalDateTime.now();
         boolean isExpired = attendanceTaskService.isTaskExpired(id, currentTime);
         return ResponseEntity.ok(isExpired);
+    }
+
+    // 考勤统计相关接口
+
+    // 获取班级考勤任务数量统计
+    @GetMapping("/class/{courseClassId}/count")
+    public ResponseEntity<Long> getClassAttendanceTaskCount(@PathVariable Long courseClassId) {
+        Long count = attendanceTaskService.getClassAttendanceTaskCount(courseClassId);
+        return ResponseEntity.ok(count);
+    }
+
+    // 获取教师考勤任务数量统计
+    @GetMapping("/teacher/{teacherId}/count")
+    public ResponseEntity<Long> getTeacherAttendanceTaskCount(@PathVariable Long teacherId) {
+        Long count = attendanceTaskService.getTeacherAttendanceTaskCount(teacherId);
+        return ResponseEntity.ok(count);
+    }
+
+    // 获取班级考勤任务统计详情
+    @GetMapping("/class/{courseClassId}/statistics")
+    public ResponseEntity<Map<String, Object>> getClassAttendanceTaskStatistics(@PathVariable Long courseClassId) {
+        Map<String, Object> statistics = attendanceTaskService.getClassAttendanceTaskStatistics(courseClassId);
+        return ResponseEntity.ok(statistics);
+    }
+
+    // 获取教师考勤任务统计详情
+    @GetMapping("/teacher/{teacherId}/statistics")
+    public ResponseEntity<Map<String, Object>> getTeacherAttendanceTaskStatistics(@PathVariable Long teacherId) {
+        Map<String, Object> statistics = attendanceTaskService.getTeacherAttendanceTaskStatistics(teacherId);
+        return ResponseEntity.ok(statistics);
     }
 }

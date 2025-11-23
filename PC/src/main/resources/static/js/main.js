@@ -582,90 +582,82 @@ document.addEventListener('DOMContentLoaded', function () {
                 `;
                 setTimeout(initPublishTaskPage, 100);
                 break;
-            case 'attendance':
-                content = `
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">人脸识别考勤</div>
-                        </div>
-                        <div class="card-body">
-                            <div class="face-recognition-area">
-                                <div class="camera-preview">
-                                    <div class="camera-icon">📷</div>
-                                </div>
-                                <button class="btn btn-accent" style="width: 200px;">开始识别</button>
-                                <div class="recognition-result">
-                                    <p>请点击"开始识别"按钮进行人脸识别考勤</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                break;
             case 'statistics':
                 content = `
-                    <div class="card">
+                    <div class="card" id="statistics">
                         <div class="card-header">
                             <div class="card-title">考勤统计</div>
                         </div>
                         <div class="card-body">
                             <div class="form-group">
-                                <label>选择课程</label>
-                                <select>
-                                    <option>软件工程</option>
-                                    <option>数据结构</option>
-                                    <option>数据库原理</option>
+                                <label>选择班级</label>
+                                <select id="statistics-class-select">
+                                    <option value="">正在加载...</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label>选择时间范围</label>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <input type="date" value="2023-10-01">
-                                    </div>
-                                    <div class="form-group">
-                                        <input type="date" value="2023-10-31">
-                                    </div>
-                                </div>
-                            </div>
                             <button class="btn btn-accent">生成统计报告</button>
-                            
+
                             <div style="margin-top: 30px;">
-                                <h3>考勤统计结果</h3>
-                                <div class="table-container" style="margin-top: 15px;">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>学生姓名</th>
-                                                <th>学号</th>
-                                                <th>出勤次数</th>
-                                                <th>缺勤次数</th>
-                                                <th>出勤率</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>张三</td>
-                                                <td>S2023001</td>
-                                                <td>15</td>
-                                                <td>1</td>
-                                                <td>93.8%</td>
-                                            </tr>
-                                            <tr>
-                                                <td>李四</td>
-                                                <td>S2023002</td>
-                                                <td>14</td>
-                                                <td>2</td>
-                                                <td>87.5%</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <!-- 统计结果将在这里动态显示 -->
                             </div>
                         </div>
                     </div>
                 `;
                 setTimeout(initStatisticsPage, 100);
+                break;
+            case 'course-selection':
+                content = `
+                    <div class="card" id="course-selection">
+                        <div class="card-header">
+                            <div class="card-title">学生选课系统</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="course-selection-tabs">
+                                <div class="tab-buttons">
+                                    <button class="tab-btn active" data-tab="available-courses">
+                                        <span class="tab-icon">📚</span>
+                                        <span class="tab-text">可选课程</span>
+                                    </button>
+                                    <button class="tab-btn" data-tab="my-courses">
+                                        <span class="tab-icon">📖</span>
+                                        <span class="tab-text">我的课程</span>
+                                    </button>
+                                </div>
+
+                                <div class="tab-content">
+                                    <!-- 可选课程标签页 -->
+                                    <div class="tab-pane active" id="available-courses">
+                                        <div class="form-group" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                            <div style="font-size: 14px; color: #7f8c8d;">找到 <span id="available-count" style="color: var(--primary-color); font-weight: 600;">0</span> 门可选课程</div>
+                                            <button class="btn btn-accent" id="refresh-available-courses" style="display: flex; align-items: center; gap: 6px;">
+                                                <span>🔄</span>
+                                                <span>刷新可选课程</span>
+                                            </button>
+                                        </div>
+                                        <div class="course-list" id="available-courses-list">
+                                            <!-- 课程列表将在这里动态加载 -->
+                                        </div>
+                                    </div>
+
+                                    <!-- 我的课程标签页 -->
+                                    <div class="tab-pane" id="my-courses">
+                                        <div class="form-group" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                            <div style="font-size: 14px; color: #7f8c8d;">已选择 <span id="my-courses-count" style="color: var(--success-color); font-weight: 600;">0</span> 门课程</div>
+                                            <button class="btn btn-secondary" id="refresh-my-courses" style="display: flex; align-items: center; gap: 6px;">
+                                                <span>🔄</span>
+                                                <span>刷新我的课程</span>
+                                            </button>
+                                        </div>
+                                        <div class="course-list" id="my-courses-list">
+                                            <!-- 已选课程列表将在这里动态加载 -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                setTimeout(initCourseSelectionPage, 100);
                 break;
             case 'permission-assign':
                 content = `
@@ -858,20 +850,47 @@ function editStudent(id) {
 
 // 删除学生
 function deleteStudent(id) {
+    // 验证ID是否有效
+    if (!id || id === 'undefined' || id === 'null' || (typeof id === 'string' && isNaN(id))) {
+        showToast('无效的学生ID', 'error');
+        return;
+    }
+    
+    // 确保ID是数字类型
+    const studentId = parseInt(id);
+    if (isNaN(studentId) || studentId <= 0) {
+        showToast('无效的学生ID', 'error');
+        return;
+    }
+    
     Modal.confirm({
         title: '⚠️ 确认删除',
-        message: '确定要删除这个学生吗？此操作不可撤销。',
+        message: '确定要删除这个学生吗？<br><br>如果该学生有选课记录，删除操作将失败。',
         submitText: '删除',
         danger: true,
         onConfirm: () => {
-            StudentAPI.delete(id)
-                .then(() => {
-                    showToast('学生删除成功！', 'success');
+            StudentAPI.delete(studentId)
+                .then((response) => {
+                    const message = response?.message || '学生删除成功！';
+                    showToast(message, 'success');
                     loadStudents();
                 })
                 .catch(error => {
                     console.error('删除失败:', error);
-                    showToast('删除失败，请重试', 'error');
+                    // 显示详细的错误信息
+                    let errorMessage = '删除失败，请重试';
+                    if (error.message) {
+                        errorMessage = error.message;
+                    } else if (error.response?.message) {
+                        errorMessage = error.response.message;
+                    }
+                    
+                    // 如果是409冲突错误（有选课记录），提供更详细的提示
+                    if (error.status === 409 || errorMessage.includes('选课记录')) {
+                        errorMessage = errorMessage + '<br><br>提示：请先删除或处理该学生的选课记录后再删除学生。';
+                    }
+                    
+                    showToast(errorMessage, 'error');
                 });
         }
     });
@@ -1006,20 +1025,36 @@ function editUser(id) {
 
 // 删除用户
 function deleteUser(id, username) {
+    // 验证ID是否有效
+    if (!id || id === 'undefined' || id === 'null' || (typeof id === 'string' && isNaN(id))) {
+        showToast('无效的用户ID', 'error');
+        return;
+    }
+    
+    // 确保ID是数字类型
+    const userId = parseInt(id);
+    if (isNaN(userId) || userId <= 0) {
+        showToast('无效的用户ID', 'error');
+        return;
+    }
+    
     Modal.confirm({
         title: '确认删除用户',
         message: `确定要删除用户"${username}"吗？<br><br>此操作不可撤销。`,
         submitText: '删除',
         danger: true,
         onConfirm: () => {
-            UserAPI.delete(id)
-                .then(() => {
-                    showToast(`用户"${username}"删除成功！`, 'success');
+            UserAPI.delete(userId)
+                .then((response) => {
+                    const message = response?.message || `用户"${username}"删除成功！`;
+                    showToast(message, 'success');
                     loadUsersTable();
                 })
                 .catch(error => {
                     console.error('删除失败:', error);
-                    showToast('删除失败，请重试', 'error');
+                    // 显示详细的错误信息
+                    const errorMessage = error.message || error.response?.message || '删除失败，请重试';
+                    showToast(errorMessage, 'error');
                 });
         }
     });
@@ -1464,20 +1499,28 @@ function initPublishTaskPage() {
             window.currentMarker = null;
         }
         
-        // 默认位置：如果没有提供坐标，则默认为北京
-        const defaultLat = lat || 39.9042;
-        const defaultLng = lng || 116.4074;
-        const zoomLevel = lat ? 16 : 12;
+        // 验证并转换坐标值
+        const numLat = parseFloat(lat);
+        const numLng = parseFloat(lng);
+        const isValidLat = !isNaN(numLat) && numLat >= -90 && numLat <= 90;
+        const isValidLng = !isNaN(numLng) && numLng >= -180 && numLng <= 180;
+        
+        // 默认位置：如果没有提供有效坐标，则默认为北京
+        const defaultLat = isValidLat ? numLat : 39.9042;
+        const defaultLng = isValidLng ? numLng : 116.4074;
+        const zoomLevel = (isValidLat && isValidLng) ? 16 : 12;
 
         // 使用高德地图初始化
         // 如果 AMap 已经加载，直接创建地图；否则先加载 AMap
         if (window.AMapInstance) {
-            return Promise.resolve(createAMapInstance(window.AMapInstance, defaultLng, defaultLat, zoomLevel, lat, lng));
+            return Promise.resolve(createAMapInstance(window.AMapInstance, defaultLng, defaultLat, zoomLevel, 
+                isValidLat ? numLat : null, isValidLng ? numLng : null));
         } else {
             // 先加载 AMap 对象（不创建地图实例）
             return initAMap(null, null).then((AMap) => {
                 window.AMapInstance = AMap;
-                return createAMapInstance(AMap, defaultLng, defaultLat, zoomLevel, lat, lng);
+                return createAMapInstance(AMap, defaultLng, defaultLat, zoomLevel, 
+                    isValidLat ? numLat : null, isValidLng ? numLng : null);
             }).catch((e) => {
                 console.error('高德地图加载失败:', e);
                 mapContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">地图加载失败，请检查网络连接</div>';
@@ -1488,9 +1531,14 @@ function initPublishTaskPage() {
     
     // 创建高德地图实例的辅助函数
     function createAMapInstance(AMap, defaultLng, defaultLat, zoomLevel, lat, lng) {
+        // 确保坐标是有效的数字
+        const validLng = typeof defaultLng === 'number' && !isNaN(defaultLng) ? defaultLng : 116.4074;
+        const validLat = typeof defaultLat === 'number' && !isNaN(defaultLat) ? defaultLat : 39.9042;
+        const validZoom = typeof zoomLevel === 'number' && !isNaN(zoomLevel) ? zoomLevel : 12;
+        
         const map = new AMap.Map('map-container', {
-            zoom: zoomLevel,
-            center: [defaultLng, defaultLat],
+            zoom: validZoom,
+            center: [validLng, validLat],
             viewMode: '3D'
         });
         
@@ -1499,14 +1547,26 @@ function initPublishTaskPage() {
         // 添加比例尺
         map.addControl(new AMap.Scale());
         
-        let marker;
-        if (lat && lng) {
-            marker = new AMap.Marker({
-                position: [defaultLng, defaultLat],
+        // 先删除旧的标记
+        if (window.currentMarker) {
+            window.currentMarker.setMap(null);
+            window.currentMarker = null;
+        }
+        
+        // 验证lat和lng是否有效
+        const numLat = parseFloat(lat);
+        const numLng = parseFloat(lng);
+        const hasValidCoords = !isNaN(numLat) && !isNaN(numLng) && 
+                               numLat >= -90 && numLat <= 90 && 
+                               numLng >= -180 && numLng <= 180;
+        
+        // 如果有有效坐标，创建标记
+        if (hasValidCoords) {
+            window.currentMarker = new AMap.Marker({
+                position: [numLng, numLat],
                 draggable: true
             });
-            marker.setMap(map);
-            window.currentMarker = marker;
+            window.currentMarker.setMap(map);
         }
 
         // 地图点击事件
@@ -1517,16 +1577,17 @@ function initPublishTaskPage() {
                 // 更新可见和隐藏的经纬度输入框
                 updateCoordinates(clickedLat, clickedLng);
                 
-                // 更新或创建标记
-                if (marker) {
-                    marker.setPosition([clickedLng, clickedLat]);
+                // 更新或创建标记（确保只有一个标记）
+                if (window.currentMarker) {
+                    // 如果已存在标记，只更新位置
+                    window.currentMarker.setPosition([clickedLng, clickedLat]);
                 } else {
-                    marker = new AMap.Marker({
+                    // 如果不存在标记，创建新标记
+                    window.currentMarker = new AMap.Marker({
                         position: [clickedLng, clickedLat],
                         draggable: true
                     });
-                    marker.setMap(map);
-                    window.currentMarker = marker;
+                    window.currentMarker.setMap(map);
                 }
                 
                 // 高德地图逆地理编码获取地址
@@ -1544,11 +1605,13 @@ function initPublishTaskPage() {
                                 locationRangeInput.value = simplifiedAddress;
                                 
                                 // 设置标记信息窗口
-                                marker.setTitle(simplifiedAddress);
-                                marker.setLabel({
-                                    content: simplifiedAddress,
-                                    direction: 'right'
-                                });
+                                if (window.currentMarker) {
+                                    window.currentMarker.setTitle(simplifiedAddress);
+                                    window.currentMarker.setLabel({
+                                        content: simplifiedAddress,
+                                        direction: 'right'
+                                    });
+                                }
                             }
                         }
                     });
@@ -1558,9 +1621,9 @@ function initPublishTaskPage() {
         });
         
         // 标记拖拽事件
-        if (marker) {
-            marker.on('dragend', async function(e) {
-                    const position = marker.getPosition();
+        if (window.currentMarker) {
+            window.currentMarker.on('dragend', async function(e) {
+                    const position = window.currentMarker.getPosition();
                     const lat = position.getLat();
                     const lng = position.getLng();
                     
@@ -1578,11 +1641,13 @@ function initPublishTaskPage() {
                                     const addressParts = address.split(/省|市|区|县|街道|路|号/);
                                     const simplifiedAddress = addressParts.slice(0, 3).join('') || address;
                                     locationRangeInput.value = simplifiedAddress;
-                                    marker.setTitle(simplifiedAddress);
-                                    marker.setLabel({
-                                        content: simplifiedAddress,
-                                        direction: 'right'
-                                    });
+                                    if (window.currentMarker) {
+                                        window.currentMarker.setTitle(simplifiedAddress);
+                                        window.currentMarker.setLabel({
+                                            content: simplifiedAddress,
+                                            direction: 'right'
+                                        });
+                                    }
                                 }
                             }
                         });
@@ -1786,8 +1851,9 @@ function initPublishTaskPage() {
                             map.setCenter([lng, lat]);
                             map.setZoom(16);
                             
-                            // 更新或创建标记
+                            // 更新或创建标记（确保只有一个标记）
                             if (window.currentMarker) {
+                                // 如果已存在标记，只更新位置和标签
                                 window.currentMarker.setPosition([lng, lat]);
                                 window.currentMarker.setTitle(poi.name);
                                 window.currentMarker.setLabel({
@@ -1795,21 +1861,21 @@ function initPublishTaskPage() {
                                     direction: 'right'
                                 });
                             } else {
-                                const marker = new AMap.Marker({
+                                // 如果不存在标记，创建新标记
+                                window.currentMarker = new AMap.Marker({
                                     position: [lng, lat],
                                     draggable: true,
                                     title: poi.name
                                 });
-                                marker.setMap(map);
-                                marker.setLabel({
+                                window.currentMarker.setMap(map);
+                                window.currentMarker.setLabel({
                                     content: poi.name,
                                     direction: 'right'
                                 });
-                                window.currentMarker = marker;
                                 
                                 // 绑定拖拽事件
-                                marker.on('dragend', function(e) {
-                                    const position = marker.getPosition();
+                                window.currentMarker.on('dragend', function(e) {
+                                    const position = window.currentMarker.getPosition();
                                     const dragLat = position.getLat();
                                     const dragLng = position.getLng();
                                     updateCoordinates(dragLat, dragLng);
@@ -1825,11 +1891,13 @@ function initPublishTaskPage() {
                                                     const addressParts = address.split(/省|市|区|县|街道|路|号/);
                                                     const simplifiedAddress = addressParts.slice(0, 3).join('') || address;
                                                     locationRangeInput.value = simplifiedAddress;
-                                                    marker.setTitle(simplifiedAddress);
-                                                    marker.setLabel({
-                                                        content: simplifiedAddress,
-                                                        direction: 'right'
-                                                    });
+                                                    if (window.currentMarker) {
+                                                        window.currentMarker.setTitle(simplifiedAddress);
+                                                        window.currentMarker.setLabel({
+                                                            content: simplifiedAddress,
+                                                            direction: 'right'
+                                                        });
+                                                    }
                                                 }
                                             }
                                         });
@@ -2277,3 +2345,460 @@ document.addEventListener('change', function(e) {
         updatePermissionItemStyle(e.target);
     }
 });
+
+// ========== 学生选课功能 ==========
+
+// 初始化学生选课页面
+function initCourseSelectionPage() {
+    // 确保样式正确应用
+    const tabButtonsContainer = document.querySelector('#course-selection .tab-buttons');
+    if (tabButtonsContainer) {
+        // 确保容器样式
+        tabButtonsContainer.style.display = 'flex';
+        tabButtonsContainer.style.gap = '16px';
+        tabButtonsContainer.style.marginBottom = '30px';
+        tabButtonsContainer.style.padding = '8px';
+        tabButtonsContainer.style.background = '#f8f9fa';
+        tabButtonsContainer.style.borderRadius = '12px';
+        tabButtonsContainer.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.06)';
+    }
+    
+    // 标签页切换
+    const tabButtons = document.querySelectorAll('#course-selection .tab-btn');
+    const tabPanes = document.querySelectorAll('#course-selection .tab-pane');
+    
+    // 确保按钮样式
+    tabButtons.forEach(btn => {
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.gap = '8px';
+        btn.style.flex = '1';
+        btn.style.padding = '16px 24px';
+        btn.style.borderRadius = '8px';
+        btn.style.border = 'none';
+        btn.style.cursor = 'pointer';
+        btn.style.fontSize = '15px';
+        btn.style.fontWeight = '600';
+        btn.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        btn.style.position = 'relative';
+        
+        if (btn.classList.contains('active')) {
+            btn.style.color = 'white';
+            btn.style.background = 'linear-gradient(135deg, #3498db 0%, #2980b9 50%, #1abc9c 100%)';
+            btn.style.boxShadow = '0 4px 15px rgba(52, 152, 219, 0.4), 0 2px 8px rgba(52, 152, 219, 0.3)';
+            btn.style.transform = 'translateY(-2px)';
+        } else {
+            btn.style.color = '#6c757d';
+            btn.style.background = 'transparent';
+        }
+    });
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // 移除所有活动状态
+            tabButtons.forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.color = '#6c757d';
+                btn.style.background = 'transparent';
+                btn.style.boxShadow = 'none';
+                btn.style.transform = 'translateY(0)';
+            });
+            tabPanes.forEach(pane => pane.classList.remove('active'));
+
+            // 添加当前活动状态
+            button.classList.add('active');
+            button.style.color = 'white';
+            button.style.background = 'linear-gradient(135deg, #3498db 0%, #2980b9 50%, #1abc9c 100%)';
+            button.style.boxShadow = '0 4px 15px rgba(52, 152, 219, 0.4), 0 2px 8px rgba(52, 152, 219, 0.3)';
+            button.style.transform = 'translateY(-2px)';
+            
+            const tabId = button.getAttribute('data-tab');
+            document.getElementById(tabId).classList.add('active');
+
+            // 加载对应标签页的数据
+            loadTabData(tabId);
+        });
+    });
+
+    // 绑定按钮事件
+    document.getElementById('refresh-available-courses').addEventListener('click', () => loadAvailableCourses());
+    document.getElementById('refresh-my-courses').addEventListener('click', () => loadMyCourses());
+
+    // 初始化加载可选课程
+    loadAvailableCourses();
+}
+
+// 加载标签页数据
+function loadTabData(tabId) {
+    switch(tabId) {
+        case 'available-courses':
+            loadAvailableCourses();
+            break;
+        case 'my-courses':
+            loadMyCourses();
+            break;
+    }
+}
+
+// 加载可选课程
+function loadAvailableCourses() {
+    const container = document.getElementById('available-courses-list');
+    container.innerHTML = '<div class="loading">正在加载...</div>';
+
+    // 调用后端API获取可选课程
+    StudentCourseAPI.getAvailableCourses(1) // 假设学生ID为1
+        .then(courses => {
+            if (!courses || courses.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: var(--text-light); background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📚</div>
+                        <div style="font-size: 16px; margin-bottom: 8px; font-weight: 600;">暂无可选课程</div>
+                        <div style="font-size: 14px; color: #95a5a6;">请稍后再试或联系管理员</div>
+                    </div>
+                `;
+                // 更新计数
+                const countElement = document.getElementById('available-count');
+                if (countElement) {
+                    countElement.textContent = '0';
+                }
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="course-table">
+                    <thead>
+                        <tr>
+                            <th>课程名称</th>
+                            <th>课程代码</th>
+                            <th>班级</th>
+                            <th>学分</th>
+                            <th>上课时间</th>
+                            <th>上课地点</th>
+                            <th>学期</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${courses.map(course => `
+                            <tr>
+                                <td class="course-name-cell">${course.courseName || '未知'}</td>
+                                <td class="course-info-cell">${course.courseCode || 'N/A'}</td>
+                                <td class="course-info-cell">${course.className || '未知'}</td>
+                                <td class="course-info-cell">${course.credits || '0'}</td>
+                                <td class="course-info-cell">${course.classTime || '未设置'}</td>
+                                <td class="course-info-cell">${course.classLocation || '未设置'}</td>
+                                <td class="course-info-cell">${course.semester || '未知'}</td>
+                                <td class="course-actions-cell">
+                                    <button class="btn btn-sm btn-accent" onclick="enrollCourse(${course.classId})">选课</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // 更新计数
+            const countElement = document.getElementById('available-count');
+            if (countElement) {
+                countElement.textContent = courses.length;
+            }
+
+            showToast('可选课程加载完成', 'success');
+        })
+        .catch(error => {
+            console.error('加载可选课程失败:', error);
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">加载失败，请稍后重试</div>';
+            showToast('加载可选课程失败', 'error');
+        });
+}
+
+// 加载我的课程
+function loadMyCourses() {
+    const container = document.getElementById('my-courses-list');
+    container.innerHTML = '<div class="loading">正在加载...</div>';
+
+    // 调用后端API获取已选课程
+    StudentCourseAPI.getStudentCourses(1) // 假设学生ID为1
+        .then(courses => {
+            if (!courses || courses.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: var(--text-light); background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📖</div>
+                        <div style="font-size: 16px; margin-bottom: 8px; font-weight: 600;">暂无已选课程</div>
+                        <div style="font-size: 14px; color: #95a5a6;">快去选择你感兴趣的课程吧！</div>
+                    </div>
+                `;
+                // 更新计数
+                const countElement = document.getElementById('my-courses-count');
+                if (countElement) {
+                    countElement.textContent = '0';
+                }
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="course-table">
+                    <thead>
+                        <tr>
+                            <th>课程名称</th>
+                            <th>课程代码</th>
+                            <th>班级</th>
+                            <th>学分</th>
+                            <th>上课时间</th>
+                            <th>上课地点</th>
+                            <th>学期</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${courses.map(course => `
+                            <tr>
+                                <td class="course-name-cell">${course.courseName || '未知'}</td>
+                                <td class="course-info-cell">${course.courseCode || 'N/A'}</td>
+                                <td class="course-info-cell">${course.className || '未知'}</td>
+                                <td class="course-info-cell">${course.credits || '0'}</td>
+                                <td class="course-info-cell">${course.classTime || '未设置'}</td>
+                                <td class="course-info-cell">${course.classLocation || '未设置'}</td>
+                                <td class="course-info-cell">${course.semester || '未知'}</td>
+                                <td><span class="status-enrolled">${getStatusText('ENROLLED')}</span></td>
+                                <td class="course-actions-cell">
+                                    <button class="btn btn-sm btn-danger" onclick="dropCourse(${course.classId})">退课</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // 更新计数
+            const countElement = document.getElementById('my-courses-count');
+            if (countElement) {
+                countElement.textContent = courses.length;
+            }
+
+            showToast('已选课程加载完成', 'success');
+        })
+        .catch(error => {
+            console.error('加载已选课程失败:', error);
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">加载失败，请稍后重试</div>';
+            showToast('加载已选课程失败', 'error');
+        });
+}
+
+// 单个选课
+function enrollCourse(classId) {
+    if (!confirm('确认要选修这门课程吗？')) {
+        return;
+    }
+
+    // 调用后端API进行选课
+    StudentCourseAPI.enroll(1, classId) // 假设学生ID为1
+        .then(result => {
+            showToast(`课程 ${classId} 选修成功`, 'success');
+            // 刷新数据
+            loadAvailableCourses();
+            loadMyCourses();
+        })
+        .catch(error => {
+            console.error('选课失败:', error);
+            showToast(`课程 ${classId} 选修失败`, 'error');
+        });
+}
+
+// 退课
+function dropCourse(classId) {
+    if (!confirm('确认要退修这门课程吗？此操作不可撤销。')) {
+        return;
+    }
+
+    // 调用后端API进行退课
+    StudentCourseAPI.drop(1, classId) // 假设学生ID为1
+        .then(result => {
+            showToast(`课程 ${classId} 退修成功`, 'success');
+            // 刷新数据
+            loadAvailableCourses();
+            loadMyCourses();
+        })
+        .catch(error => {
+            console.error('退课失败:', error);
+            showToast(`课程 ${classId} 退修失败`, 'error');
+        });
+}
+
+// 查看课程详情
+function checkCourseDetails(classId) {
+    // 这里可以实现查看课程详细信息的弹窗
+    showToast(`查看课程 ${classId} 详情`, 'info');
+}
+
+// 获取状态文本
+function getStatusText(status) {
+    switch(status) {
+        case 'ENROLLED': return '已选修';
+        case 'DROPPED': return '已退修';
+        case 'COMPLETED': return '已完成';
+        default: return status;
+    }
+}
+
+// ========== 考勤统计功能 ==========
+
+// 初始化考勤统计页面
+function initStatisticsPage() {
+    const generateBtn = document.querySelector('#statistics button.btn-accent');
+    const classSelect = document.querySelector('#statistics select');
+
+    // 加载班级选项
+    loadClassOptions();
+
+    // 生成统计报告按钮事件
+    if (generateBtn) {
+        generateBtn.addEventListener('click', generateStatisticsReport);
+    }
+
+    function loadClassOptions() {
+        CourseClassAPI.getAll().then(classes => {
+            if (!classes || classes.length === 0) {
+                classSelect.innerHTML = '<option value="">暂无班级数据</option>';
+                return;
+            }
+            classSelect.innerHTML = '<option value="">请选择班级</option>' +
+                classes.map(c => `<option value="${c.classId}">${c.className} (ID:${c.classId})</option>`).join('');
+        }).catch(err => {
+            console.error('加载班级失败:', err);
+            classSelect.innerHTML = '<option value="">加载失败</option>';
+            showToast('加载班级失败，请检查网络或后端服务', 'error');
+        });
+    }
+
+    function generateStatisticsReport() {
+        const classId = classSelect.value;
+        if (!classId) {
+            showToast('请选择班级', 'warning');
+            return;
+        }
+
+        // 显示加载状态
+        generateBtn.disabled = true;
+        generateBtn.textContent = '生成中...';
+
+        // 调用考勤任务统计API
+        fetch(`/api/attendance-tasks/class/${classId}/statistics`)
+            .then(response => response.json())
+            .then(data => {
+                displayStatisticsReport(data, classId);
+                showToast('统计报告生成成功', 'success');
+            })
+            .catch(error => {
+                console.error('生成统计报告失败:', error);
+                showToast('生成统计报告失败，请稍后重试', 'error');
+            })
+            .finally(() => {
+                generateBtn.disabled = false;
+                generateBtn.textContent = '生成统计报告';
+            });
+    }
+
+    function displayStatisticsReport(statistics, classId) {
+        const resultDiv = document.querySelector('#statistics .card-body > div:last-child');
+        if (!resultDiv) return;
+
+        const html = `
+            <h3>考勤统计结果</h3>
+            <div class="statistics-summary" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                    <div class="stat-item">
+                        <strong>总任务数:</strong> ${statistics.totalTasks || 0}
+                    </div>
+                    <div class="stat-item">
+                        <strong>活跃任务:</strong> ${statistics.activeTasks || 0}
+                    </div>
+                    <div class="stat-item">
+                        <strong>已过期任务:</strong> ${statistics.expiredTasks || 0}
+                    </div>
+                    <div class="stat-item">
+                        <strong>即将开始:</strong> ${statistics.upcomingTasks || 0}
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 15px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>任务ID</th>
+                            <th>开始时间</th>
+                            <th>结束时间</th>
+                            <th>状态</th>
+                            <th>位置范围</th>
+                        </tr>
+                    </thead>
+                    <tbody id="statistics-table-body">
+                        <!-- 动态填充任务详情 -->
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        resultDiv.innerHTML = html;
+
+        // 加载并显示任务详情
+        loadTaskDetails(classId);
+    }
+
+    function loadTaskDetails(classId) {
+        AttendanceTaskAPI.getByCourseClassId(classId)
+            .then(tasks => {
+                const tbody = document.getElementById('statistics-table-body');
+                if (!tbody) return;
+
+                if (!tasks || tasks.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无考勤任务数据</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = tasks.map(task => {
+                    const status = getTaskStatus(task);
+                    return `
+                        <tr>
+                            <td>${task.taskId}</td>
+                            <td>${formatDateTime(task.startTime)}</td>
+                            <td>${formatDateTime(task.endTime)}</td>
+                            <td><span class="status-${status.toLowerCase()}">${status}</span></td>
+                            <td>${task.locationRange || '未设置'}</td>
+                        </tr>
+                    `;
+                }).join('');
+            })
+            .catch(error => {
+                console.error('加载任务详情失败:', error);
+                const tbody = document.getElementById('statistics-table-body');
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">加载失败</td></tr>';
+                }
+            });
+    }
+
+    function getTaskStatus(task) {
+        const now = new Date();
+        const startTime = new Date(task.startTime);
+        const endTime = new Date(task.endTime);
+
+        if (now < startTime) return 'UPCOMING';
+        if (now > endTime) return 'EXPIRED';
+        return 'ACTIVE';
+    }
+
+    function formatDateTime(dateTimeStr) {
+        const date = new Date(dateTimeStr);
+        return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+}

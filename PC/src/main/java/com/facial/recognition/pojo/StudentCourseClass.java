@@ -23,8 +23,10 @@ public class StudentCourseClass implements Serializable {
     @Column(name = "Status")
     private String status; // 状态：ENROLLED, DROPPED, COMPLETED
 
+    @Column(name = "FinalGrade")
     private Double finalGrade; // 最终成绩
 
+    @Column(name = "GradeLevel")
     private String gradeLevel; // 成绩等级：A, B, C, D, F
 
     public StudentCourseClass() {}

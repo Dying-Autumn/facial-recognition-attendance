@@ -40,4 +40,18 @@ public interface AttendanceTaskService {
     
     // 检查考勤任务是否已过期
     boolean isTaskExpired(Long taskId, LocalDateTime currentTime);
+
+    // 考勤统计相关方法
+
+    // 统计某个班级的考勤任务数量
+    Long getClassAttendanceTaskCount(Long courseClassId);
+
+    // 统计某个教师的考勤任务数量
+    Long getTeacherAttendanceTaskCount(Long teacherId);
+
+    // 获取班级考勤任务统计详情
+    java.util.Map<String, Object> getClassAttendanceTaskStatistics(Long courseClassId);
+
+    // 获取教师考勤任务统计详情
+    java.util.Map<String, Object> getTeacherAttendanceTaskStatistics(Long teacherId);
 }

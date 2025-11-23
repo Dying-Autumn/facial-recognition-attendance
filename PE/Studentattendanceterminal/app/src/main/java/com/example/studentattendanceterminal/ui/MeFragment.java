@@ -1,6 +1,7 @@
 package com.example.studentattendanceterminal.ui;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -41,6 +42,7 @@ public class MeFragment extends Fragment {
     private View layoutProfileInfo;
     private TextView tvStudentName;
     private TextView tvStudentNumberDisplay;
+    private MaterialButton btnViewLogs;
     private MaterialButton btnLogout;
 
     @Nullable
@@ -60,6 +62,7 @@ public class MeFragment extends Fragment {
         layoutProfileInfo = view.findViewById(R.id.layout_profile_info);
         tvStudentName = view.findViewById(R.id.tv_student_name);
         tvStudentNumberDisplay = view.findViewById(R.id.tv_student_number_display);
+        btnViewLogs = view.findViewById(R.id.btn_view_logs);
         btnLogout = view.findViewById(R.id.btn_logout);
 
         updateUIState();
@@ -110,6 +113,12 @@ public class MeFragment extends Fragment {
                 }
             });
         });
+        btnViewLogs.setOnClickListener(v -> {
+            // 打开日志查看器
+            Intent intent = new Intent(getContext(), LogViewerActivity.class);
+            startActivity(intent);
+        });
+
         btnLogout.setOnClickListener(v -> {
             // 退出登录逻辑
             SharedPreferences prefs = requireContext().getSharedPreferences("auth_prefs", Context.MODE_PRIVATE);

@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/student-course-classes")
@@ -41,12 +43,21 @@ public class StudentCourseClassController {
         }
     }
 
-    // 根据ID获取选课记录
+    // 根据ID获取选课记录（注意：StudentCourseClass使用复合主键，此方法可能无法正常工作）
     @GetMapping("/{id}")
-    public ResponseEntity<StudentCourseClass> getEnrollmentById(@PathVariable Long id) {
-        Optional<StudentCourseClass> enrollment = studentCourseClassService.findById(id);
-        return enrollment.map(ResponseEntity::ok)
-                        .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Map<String, Object>> getEnrollmentById(@PathVariable Long id) {
+        if (id == null || id <= 0) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "无效的ID参数");
+            return ResponseEntity.badRequest().body(response);
+        }
+        // 由于StudentCourseClass使用复合主键，此方法可能无法正常工作
+        // 建议使用根据学生ID和班级ID查询的方法
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("message", "StudentCourseClass使用复合主键，请使用根据学生ID和班级ID查询的方法");
+        return ResponseEntity.badRequest().body(response);
     }
 
     // 根据学生ID和班级ID获取选课记录
@@ -98,27 +109,61 @@ public class StudentCourseClassController {
         return ResponseEntity.ok(enrollments);
     }
 
-    // 更新选课状态
+    // 更新选课状态（注意：StudentCourseClass使用复合主键，此方法需要studentId和classId）
     @PatchMapping("/{id}/status")
-    public ResponseEntity<StudentCourseClass> updateEnrollmentStatus(
+    public ResponseEntity<Map<String, Object>> updateEnrollmentStatus(
             @PathVariable Long id, @RequestParam String status) {
+        if (id == null || id <= 0) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "无效的ID参数");
+            return ResponseEntity.badRequest().body(response);
+        }
+        if (status == null || status.trim().isEmpty() || "undefined".equalsIgnoreCase(status)) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "状态参数无效");
+            return ResponseEntity.badRequest().body(response);
+        }
         try {
             StudentCourseClass enrollment = studentCourseClassService.updateStatus(id, status);
-            return ResponseEntity.ok(enrollment);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", enrollment);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
-    // 更新成绩
+    // 更新成绩（注意：StudentCourseClass使用复合主键，此方法需要studentId和classId）
     @PatchMapping("/{id}/grade")
-    public ResponseEntity<StudentCourseClass> updateGrade(
-            @PathVariable Long id, @RequestParam Double finalGrade, @RequestParam String gradeLevel) {
+    public ResponseEntity<Map<String, Object>> updateGrade(
+            @PathVariable Long id, @RequestParam(required = false) Double finalGrade, 
+            @RequestParam(required = false) String gradeLevel) {
+        if (id == null || id <= 0) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "无效的ID参数");
+            return ResponseEntity.badRequest().body(response);
+        }
+        if (gradeLevel != null && ("undefined".equalsIgnoreCase(gradeLevel) || "null".equalsIgnoreCase(gradeLevel))) {
+            gradeLevel = null;
+        }
         try {
             StudentCourseClass enrollment = studentCourseClassService.updateGrade(id, finalGrade, gradeLevel);
-            return ResponseEntity.ok(enrollment);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", enrollment);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
@@ -165,6 +210,70 @@ public class StudentCourseClassController {
     @GetMapping("/student/{studentId}/courses")
     public ResponseEntity<List<com.facial.recognition.dto.StudentCourseDTO>> getStudentCourses(@PathVariable Long studentId) {
         List<com.facial.recognition.dto.StudentCourseDTO> courses = studentCourseClassService.getStudentCourses(studentId);
+        return ResponseEntity.ok(courses);
+    }
+
+    // 测试端点
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        return ResponseEntity.ok("Student Course API is working!");
+    }
+
+    // 新增功能
+
+    // 批量选课
+    @PostMapping("/batch-enroll")
+    public ResponseEntity<Map<String, Object>> batchEnrollStudent(
+            @RequestParam Long studentId, @RequestParam List<Long> classIds) {
+        try {
+            List<StudentCourseClass> enrollments = studentCourseClassService.batchEnrollStudent(studentId, classIds);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("enrolledCount", enrollments.size());
+            response.put("enrollments", enrollments);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    // 检查选课时间冲突
+    @GetMapping("/check-conflict")
+    public ResponseEntity<Map<String, Object>> checkTimeConflict(
+            @RequestParam Long studentId, @RequestParam Long classId) {
+        boolean hasConflict = studentCourseClassService.hasTimeConflict(studentId, classId);
+        Map<String, Object> response = new HashMap<>();
+        response.put("hasConflict", hasConflict);
+        response.put("canEnroll", !hasConflict);
+        return ResponseEntity.ok(response);
+    }
+
+    // 检查课程容量
+    @GetMapping("/class/{classId}/capacity")
+    public ResponseEntity<Map<String, Object>> checkClassCapacity(@PathVariable Long classId) {
+        boolean isFull = studentCourseClassService.isClassFull(classId);
+        Long enrolledCount = studentCourseClassService.countEnrolledStudentsByCourseClassId(classId);
+        Map<String, Object> response = new HashMap<>();
+        response.put("isFull", isFull);
+        response.put("enrolledCount", enrolledCount);
+        response.put("canEnroll", !isFull);
+        return ResponseEntity.ok(response);
+    }
+
+    // 获取学生可选课程列表
+    @GetMapping("/student/{studentId}/available-courses")
+    public ResponseEntity<List<com.facial.recognition.dto.StudentCourseDTO>> getAvailableCourses(@PathVariable Long studentId) {
+        List<com.facial.recognition.dto.StudentCourseDTO> courses = studentCourseClassService.getAvailableCoursesForStudent(studentId);
+        return ResponseEntity.ok(courses);
+    }
+
+    // 获取课程推荐
+    @GetMapping("/student/{studentId}/recommended-courses")
+    public ResponseEntity<List<com.facial.recognition.dto.StudentCourseDTO>> getRecommendedCourses(@PathVariable Long studentId) {
+        List<com.facial.recognition.dto.StudentCourseDTO> courses = studentCourseClassService.getRecommendedCourses(studentId);
         return ResponseEntity.ok(courses);
     }
 }

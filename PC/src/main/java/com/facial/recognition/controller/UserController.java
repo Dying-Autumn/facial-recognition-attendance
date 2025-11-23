@@ -8,7 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -30,6 +32,9 @@ public class UserController {
     // 根据ID获取用户
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Integer id) {
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
         return userService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -80,6 +85,9 @@ public class UserController {
     // 更新用户
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Integer id, @RequestBody User user) {
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
         return userService.findById(id)
                 .map(existingUser -> {
                     user.setUserID(id);
@@ -91,13 +99,40 @@ public class UserController {
     
     // 删除用户
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
+    public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable Integer id) {
+        if (id == null || id <= 0) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "无效的用户ID");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
         return userService.findById(id)
                 .map(user -> {
-                    userService.delete(id);
-                    return ResponseEntity.ok().<Void>build();
+                    try {
+                        userService.delete(id);
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("success", true);
+                        response.put("message", "用户删除成功");
+                        return ResponseEntity.ok(response);
+                    } catch (IllegalStateException e) {
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("success", false);
+                        response.put("message", e.getMessage());
+                        return ResponseEntity.status(409).body(response); // Conflict
+                    } catch (Exception e) {
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("success", false);
+                        response.put("message", "删除失败: " + e.getMessage());
+                        return ResponseEntity.status(500).body(response);
+                    }
                 })
-                .orElse(ResponseEntity.notFound().build());
+                .orElseGet(() -> {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "用户不存在");
+                    return ResponseEntity.status(404).body(response);
+                });
     }
 }
 

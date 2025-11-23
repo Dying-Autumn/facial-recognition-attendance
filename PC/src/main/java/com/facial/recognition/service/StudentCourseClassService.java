@@ -65,4 +65,21 @@ public interface StudentCourseClassService {
     
     // 获取学生选修的课程列表（包含课程信息）
     List<com.facial.recognition.dto.StudentCourseDTO> getStudentCourses(Long studentId);
+
+    // 新增功能
+
+    // 批量选课
+    List<StudentCourseClass> batchEnrollStudent(Long studentId, List<Long> classIds);
+
+    // 检查选课时间冲突
+    boolean hasTimeConflict(Long studentId, Long classId);
+
+    // 检查课程容量是否已满
+    boolean isClassFull(Long classId);
+
+    // 获取可选课程列表（排除已选和冲突的课程）
+    List<com.facial.recognition.dto.StudentCourseDTO> getAvailableCoursesForStudent(Long studentId);
+
+    // 获取课程推荐（基于已选课程）
+    List<com.facial.recognition.dto.StudentCourseDTO> getRecommendedCourses(Long studentId);
 }

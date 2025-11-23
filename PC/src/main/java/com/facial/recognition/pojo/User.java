@@ -1,5 +1,6 @@
 package com.facial.recognition.pojo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Table(name="User")
@@ -8,9 +9,11 @@ public class User {
     @Id        //主键
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "UserID")
+    @JsonProperty("userId")
     private Integer UserID;
 
     @Column(name = "Username")
+    @JsonProperty("username")
     private String userName;       //用户名
 
     @Column(name = "Password")
@@ -26,7 +29,17 @@ public class User {
     private String email;
 
     @Column(name = "RoleID")
+    @JsonProperty("roleId")
     private Integer RoleID;
+    
+    @Column(name = "IsActive")
+    @JsonProperty("isActive")
+    private Boolean isActive;
+    
+    @Column(name = "CreatedDate")
+    @JsonProperty("createdDate")
+    private java.time.LocalDateTime createdDate;
+    
     //get,set,tostring方法的实现
     public Integer getUserID() {
         return UserID;
@@ -84,6 +97,22 @@ public class User {
         RoleID = roleID;
     }
 
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public java.time.LocalDateTime getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(java.time.LocalDateTime createdDate) {
+        this.createdDate = createdDate;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -94,6 +123,8 @@ public class User {
                 ", phoneNumber='" + phoneNumber + '\'' +
                 ", email='" + email + '\'' +
                 ", RoleID=" + RoleID +
+                ", isActive=" + isActive +
+                ", createdDate=" + createdDate +
                 '}';
     }
 }

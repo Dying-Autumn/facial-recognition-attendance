@@ -729,8 +729,411 @@ textarea:focus {
     .modal-container {
         max-width: 95%;
     }
-    
+
     .modal-body {
         padding: 15px 20px;
+    }
+}
+
+/* ========== 学生选课页面样式 ========== */
+
+.course-selection-tabs {
+    margin-top: 20px;
+}
+
+.course-selection-tabs .tab-buttons {
+    display: flex !important;
+    gap: 16px !important;
+    margin-bottom: 30px !important;
+    padding: 8px !important;
+    background: #f8f9fa !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06) !important;
+}
+
+.course-selection-tabs .tab-btn {
+    flex: 1 !important;
+    padding: 16px 24px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: #6c757d !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    text-align: center !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    box-shadow: none !important;
+}
+
+.course-selection-tabs .tab-btn::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(26, 188, 156, 0.1)) !important;
+    opacity: 0 !important;
+    transition: opacity 0.3s ease !important;
+    border-radius: 8px !important;
+    z-index: 0 !important;
+}
+
+.course-selection-tabs .tab-btn:hover {
+    color: #3498db !important;
+    transform: translateY(-1px) !important;
+}
+
+.course-selection-tabs .tab-btn:hover::before {
+    opacity: 1 !important;
+}
+
+.course-selection-tabs .tab-btn.active {
+    color: white !important;
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 50%, #1abc9c 100%) !important;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4),
+                0 2px 8px rgba(52, 152, 219, 0.3) !important;
+    transform: translateY(-2px) !important;
+    z-index: 1 !important;
+}
+
+.course-selection-tabs .tab-btn.active::before {
+    opacity: 0 !important;
+}
+
+.course-selection-tabs .tab-btn.active::after {
+    content: '' !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 60% !important;
+    height: 3px !important;
+    background: rgba(255, 255, 255, 0.5) !important;
+    border-radius: 2px !important;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6) !important;
+}
+
+.course-selection-tabs .tab-icon {
+    font-size: 18px !important;
+    line-height: 1 !important;
+    transition: transform 0.3s ease !important;
+    position: relative !important;
+    z-index: 2 !important;
+}
+
+.course-selection-tabs .tab-btn:hover .tab-icon {
+    transform: scale(1.1) !important;
+}
+
+.course-selection-tabs .tab-btn.active .tab-icon {
+    transform: scale(1.15) !important;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)) !important;
+}
+
+.course-selection-tabs .tab-text {
+    position: relative !important;
+    z-index: 2 !important;
+}
+
+.tab-content {
+    min-height: 400px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+.course-list {
+    margin-top: 20px;
+}
+
+.course-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.course-table thead {
+    background: linear-gradient(135deg, var(--primary-color), #2980b9);
+    color: white;
+}
+
+.course-table th {
+    padding: 16px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 14px;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.course-table th:last-child {
+    border-right: none;
+}
+
+.course-table tbody tr {
+    border-bottom: 1px solid #e8e8e8;
+    transition: all 0.2s ease;
+}
+
+.course-table tbody tr:hover {
+    background: #f8f9fa;
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.course-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.course-table td {
+    padding: 16px 12px;
+    font-size: 14px;
+    color: #333;
+    border-right: 1px solid #e8e8e8;
+    vertical-align: middle;
+}
+
+.course-table td:last-child {
+    border-right: none;
+}
+
+.course-name-cell {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+
+.course-info-cell {
+    color: #7f8c8d;
+    font-size: 13px;
+}
+
+.course-actions-cell {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-sm.btn-accent {
+    background: linear-gradient(135deg, var(--primary-color), #2980b9);
+    color: white;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.btn-sm.btn-accent:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+.btn-sm:not(.btn-accent) {
+    background: white;
+    color: var(--primary-color);
+    border: 1.5px solid var(--primary-color);
+}
+
+.btn-sm:not(.btn-accent):hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-sm.btn-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.btn-sm.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-light);
+    font-size: 16px;
+}
+
+.loading::before {
+    content: '⏳';
+    display: block;
+    font-size: 48px;
+    margin-bottom: 16px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.success-message {
+    padding: 20px;
+    background: linear-gradient(135deg, var(--success-color), #27ae60);
+    color: white;
+    border-radius: 10px;
+    margin-top: 20px;
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+}
+
+.success-message::before {
+    content: '✅ ';
+    font-size: 20px;
+    margin-right: 8px;
+}
+
+.error-message {
+    padding: 20px;
+    background: linear-gradient(135deg, var(--danger-color), #c0392b);
+    color: white;
+    border-radius: 10px;
+    margin-top: 20px;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.error-message::before {
+    content: '❌ ';
+    font-size: 20px;
+    margin-right: 8px;
+}
+
+.status-enrolled {
+    display: inline-block;
+    padding: 4px 12px;
+    background: linear-gradient(135deg, var(--success-color), #27ae60);
+    color: white;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(46, 204, 113, 0.2);
+}
+
+.status-dropped {
+    display: inline-block;
+    padding: 4px 12px;
+    background: linear-gradient(135deg, var(--danger-color), #c0392b);
+    color: white;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.2);
+}
+
+.status-completed {
+    display: inline-block;
+    padding: 4px 12px;
+    background: linear-gradient(135deg, var(--accent-color), #16a085);
+    color: white;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(26, 188, 156, 0.2);
+}
+
+/* 批量选课样式优化 */
+#batch-course-select {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+#batch-course-select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+#batch-course-select option {
+    padding: 10px;
+    margin: 4px 0;
+}
+
+#batch-course-select option:hover {
+    background: rgba(52, 152, 219, 0.1);
+}
+
+/* 表格响应式 */
+@media (max-width: 1200px) {
+    .course-table {
+        font-size: 13px;
+    }
+    
+    .course-table th,
+    .course-table td {
+        padding: 12px 8px;
+    }
+}
+
+@media (max-width: 768px) {
+    .course-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .tab-buttons {
+        flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+        padding: 12px 24px;
+        font-size: 14px;
+        min-width: 100px;
+    }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .course-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .tab-buttons {
+        flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 14px;
     }
 }
