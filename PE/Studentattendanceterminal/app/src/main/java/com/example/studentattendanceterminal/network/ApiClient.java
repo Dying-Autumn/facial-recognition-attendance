@@ -8,8 +8,8 @@ import java.util.concurrent.TimeUnit;
 
 public class ApiClient {
     // 模拟器访问宿主机使用 10.0.2.2，真机请改为电脑局域网IP (如 192.168.x.x)
-    //private static final String BASE_URL = "http://10.0.2.2:8080/api/";
-    private static final String BASE_URL = "http://192.168.1.106:8080/api/";
+    private static final String BASE_URL = "http://10.0.2.2:8080/api/";
+    //private static final String BASE_URL = "http://192.168.1.106:8080/api/";
     private static Retrofit retrofit;
 
     private static Retrofit getRetrofit() {

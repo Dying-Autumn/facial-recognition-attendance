@@ -24,4 +24,12 @@ public interface StudentService {
     // 获取学生选修的课程列表
     @GET("student-course-classes/student/{studentId}/courses")
     Call<List<StudentCourse>> getStudentCourses(@Path("studentId") Long studentId);
+    
+    // 根据班级ID获取考勤任务
+    @GET("attendance-tasks/class/{courseClassId}")
+    Call<List<com.example.studentattendanceterminal.models.AttendanceTask>> getAttendanceTasksByClassId(@Path("courseClassId") Long courseClassId);
+    
+    // 获取当前活跃的考勤任务
+    @GET("attendance-tasks/active")
+    Call<List<com.example.studentattendanceterminal.models.AttendanceTask>> getActiveTasks();
 }
