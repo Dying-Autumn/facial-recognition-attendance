@@ -22,8 +22,10 @@ public class Function {
     @Column(name = "ModuleName")
     private String moduleName; // 模块名称
 
+    @Column(name = "Url")
     private String url; // 功能URL
 
+    @Column(name = "Method")
     private String method; // HTTP方法
 
     @Column(name = "SortOrder")
@@ -62,6 +64,12 @@ public class Function {
 
     public Integer getSortOrder() { return sortOrder; }
     public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+
+    public String getUrl() { return url; }
+    public void setUrl(String url) { this.url = url; }
+
+    public String getMethod() { return method; }
+    public void setMethod(String method) { this.method = method; }
 
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }

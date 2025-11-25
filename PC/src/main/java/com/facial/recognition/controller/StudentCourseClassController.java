@@ -1,6 +1,7 @@
 package com.facial.recognition.controller;
 
 import com.facial.recognition.pojo.StudentCourseClass;
+import com.facial.recognition.service.AccessControlService;
 import com.facial.recognition.service.StudentCourseClassService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,9 @@ public class StudentCourseClassController {
 
     @Autowired
     private StudentCourseClassService studentCourseClassService;
+    
+    @Autowired
+    private AccessControlService accessControlService;
 
     // 学生选课
     @PostMapping("/enroll")
@@ -63,7 +67,9 @@ public class StudentCourseClassController {
     // 根据学生ID和班级ID获取选课记录
     @GetMapping("/student/{studentId}/class/{courseClassId}")
     public ResponseEntity<StudentCourseClass> getEnrollmentByStudentAndClass(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
             @PathVariable Long studentId, @PathVariable Long courseClassId) {
+        accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         Optional<StudentCourseClass> enrollment = studentCourseClassService
             .findByStudentIdAndCourseClassId(studentId, courseClassId);
         return enrollment.map(ResponseEntity::ok)
@@ -72,14 +78,20 @@ public class StudentCourseClassController {
 
     // 根据学生ID获取选课记录
     @GetMapping("/student/{studentId}")
-    public ResponseEntity<List<StudentCourseClass>> getEnrollmentsByStudentId(@PathVariable Long studentId) {
+    public ResponseEntity<List<StudentCourseClass>> getEnrollmentsByStudentId(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
+            @PathVariable Long studentId) {
+        accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         List<StudentCourseClass> enrollments = studentCourseClassService.findByStudentId(studentId);
         return ResponseEntity.ok(enrollments);
     }
 
     // 根据班级ID获取选课记录
     @GetMapping("/class/{courseClassId}")
-    public ResponseEntity<List<StudentCourseClass>> getEnrollmentsByCourseClassId(@PathVariable Long courseClassId) {
+    public ResponseEntity<List<StudentCourseClass>> getEnrollmentsByCourseClassId(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
+            @PathVariable Long courseClassId) {
+        accessControlService.assertCanAccessCourseClass(requesterUserId, courseClassId);
         List<StudentCourseClass> enrollments = studentCourseClassService.findByCourseClassId(courseClassId);
         return ResponseEntity.ok(enrollments);
     }
@@ -94,7 +106,9 @@ public class StudentCourseClassController {
     // 根据学生ID和状态获取选课记录
     @GetMapping("/student/{studentId}/status/{status}")
     public ResponseEntity<List<StudentCourseClass>> getEnrollmentsByStudentAndStatus(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
             @PathVariable Long studentId, @PathVariable String status) {
+        accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         List<StudentCourseClass> enrollments = studentCourseClassService
             .findByStudentIdAndStatus(studentId, status);
         return ResponseEntity.ok(enrollments);
@@ -103,7 +117,9 @@ public class StudentCourseClassController {
     // 根据班级ID和状态获取选课记录
     @GetMapping("/class/{courseClassId}/status/{status}")
     public ResponseEntity<List<StudentCourseClass>> getEnrollmentsByClassAndStatus(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
             @PathVariable Long courseClassId, @PathVariable String status) {
+        accessControlService.assertCanAccessCourseClass(requesterUserId, courseClassId);
         List<StudentCourseClass> enrollments = studentCourseClassService
             .findByCourseClassIdAndStatus(courseClassId, status);
         return ResponseEntity.ok(enrollments);
@@ -169,14 +185,20 @@ public class StudentCourseClassController {
 
     // 统计班级中的学生数量
     @GetMapping("/class/{courseClassId}/count")
-    public ResponseEntity<Long> countEnrolledStudents(@PathVariable Long courseClassId) {
+    public ResponseEntity<Long> countEnrolledStudents(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
+            @PathVariable Long courseClassId) {
+        accessControlService.assertCanAccessCourseClass(requesterUserId, courseClassId);
         Long count = studentCourseClassService.countEnrolledStudentsByCourseClassId(courseClassId);
         return ResponseEntity.ok(count);
     }
 
     // 获取学生已完成的课程
     @GetMapping("/student/{studentId}/completed")
-    public ResponseEntity<List<StudentCourseClass>> getCompletedCourses(@PathVariable Long studentId) {
+    public ResponseEntity<List<StudentCourseClass>> getCompletedCourses(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
+            @PathVariable Long studentId) {
+        accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         List<StudentCourseClass> enrollments = studentCourseClassService
             .findCompletedCoursesByStudentId(studentId);
         return ResponseEntity.ok(enrollments);
@@ -184,7 +206,10 @@ public class StudentCourseClassController {
 
     // 获取学生正在进行的课程
     @GetMapping("/student/{studentId}/enrolled")
-    public ResponseEntity<List<StudentCourseClass>> getEnrolledCourses(@PathVariable Long studentId) {
+    public ResponseEntity<List<StudentCourseClass>> getEnrolledCourses(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
+            @PathVariable Long studentId) {
+        accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         List<StudentCourseClass> enrollments = studentCourseClassService
             .findEnrolledCoursesByStudentId(studentId);
         return ResponseEntity.ok(enrollments);
@@ -193,14 +218,19 @@ public class StudentCourseClassController {
     // 检查学生是否已选课
     @GetMapping("/student/{studentId}/class/{courseClassId}/enrolled")
     public ResponseEntity<Boolean> isStudentEnrolled(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
             @PathVariable Long studentId, @PathVariable Long courseClassId) {
+        accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         boolean isEnrolled = studentCourseClassService.isStudentEnrolled(studentId, courseClassId);
         return ResponseEntity.ok(isEnrolled);
     }
 
     // 获取学生选课历史
     @GetMapping("/student/{studentId}/history")
-    public ResponseEntity<List<StudentCourseClass>> getStudentEnrollmentHistory(@PathVariable Long studentId) {
+    public ResponseEntity<List<StudentCourseClass>> getStudentEnrollmentHistory(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
+            @PathVariable Long studentId) {
+        accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         List<StudentCourseClass> enrollments = studentCourseClassService
             .getStudentEnrollmentHistory(studentId);
         return ResponseEntity.ok(enrollments);
@@ -208,7 +238,10 @@ public class StudentCourseClassController {
     
     // 获取学生选修的课程列表（包含课程信息）
     @GetMapping("/student/{studentId}/courses")
-    public ResponseEntity<List<com.facial.recognition.dto.StudentCourseDTO>> getStudentCourses(@PathVariable Long studentId) {
+    public ResponseEntity<List<com.facial.recognition.dto.StudentCourseDTO>> getStudentCourses(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
+            @PathVariable Long studentId) {
+        accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         List<com.facial.recognition.dto.StudentCourseDTO> courses = studentCourseClassService.getStudentCourses(studentId);
         return ResponseEntity.ok(courses);
     }
@@ -243,7 +276,9 @@ public class StudentCourseClassController {
     // 检查选课时间冲突
     @GetMapping("/check-conflict")
     public ResponseEntity<Map<String, Object>> checkTimeConflict(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
             @RequestParam Long studentId, @RequestParam Long classId) {
+        accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         boolean hasConflict = studentCourseClassService.hasTimeConflict(studentId, classId);
         Map<String, Object> response = new HashMap<>();
         response.put("hasConflict", hasConflict);
@@ -253,7 +288,10 @@ public class StudentCourseClassController {
 
     // 检查课程容量
     @GetMapping("/class/{classId}/capacity")
-    public ResponseEntity<Map<String, Object>> checkClassCapacity(@PathVariable Long classId) {
+    public ResponseEntity<Map<String, Object>> checkClassCapacity(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
+            @PathVariable Long classId) {
+        accessControlService.assertCanAccessCourseClass(requesterUserId, classId);
         boolean isFull = studentCourseClassService.isClassFull(classId);
         Long enrolledCount = studentCourseClassService.countEnrolledStudentsByCourseClassId(classId);
         Map<String, Object> response = new HashMap<>();
@@ -265,14 +303,20 @@ public class StudentCourseClassController {
 
     // 获取学生可选课程列表
     @GetMapping("/student/{studentId}/available-courses")
-    public ResponseEntity<List<com.facial.recognition.dto.StudentCourseDTO>> getAvailableCourses(@PathVariable Long studentId) {
+    public ResponseEntity<List<com.facial.recognition.dto.StudentCourseDTO>> getAvailableCourses(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
+            @PathVariable Long studentId) {
+        accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         List<com.facial.recognition.dto.StudentCourseDTO> courses = studentCourseClassService.getAvailableCoursesForStudent(studentId);
         return ResponseEntity.ok(courses);
     }
 
     // 获取课程推荐
     @GetMapping("/student/{studentId}/recommended-courses")
-    public ResponseEntity<List<com.facial.recognition.dto.StudentCourseDTO>> getRecommendedCourses(@PathVariable Long studentId) {
+    public ResponseEntity<List<com.facial.recognition.dto.StudentCourseDTO>> getRecommendedCourses(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
+            @PathVariable Long studentId) {
+        accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         List<com.facial.recognition.dto.StudentCourseDTO> courses = studentCourseClassService.getRecommendedCourses(studentId);
         return ResponseEntity.ok(courses);
     }

@@ -31,7 +31,7 @@ spring:
         # 格式化SQL输出
         format_sql: true
         # 确保表名和列名大小写敏感（MySQL需要）
-        globally_quoted_identifiers: false
+        globally_quoted_identifiers: true
   
   # DevTools 配置 - 开发工具热重载
   devtools:

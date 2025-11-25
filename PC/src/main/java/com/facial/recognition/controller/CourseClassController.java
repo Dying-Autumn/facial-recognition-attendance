@@ -1,6 +1,7 @@
 package com.facial.recognition.controller;
 
 import com.facial.recognition.pojo.CourseClass;
+import com.facial.recognition.service.AccessControlService;
 import com.facial.recognition.service.CourseClassService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,9 @@ public class CourseClassController {
 
     @Autowired
     private CourseClassService courseClassService;
+    
+    @Autowired
+    private AccessControlService accessControlService;
 
     // 创建班级
     @PostMapping
@@ -60,7 +64,10 @@ public class CourseClassController {
 
     // 根据教师ID获取班级
     @GetMapping("/teacher/{teacherId}")
-    public ResponseEntity<List<CourseClass>> getCourseClassesByTeacherId(@PathVariable Long teacherId) {
+    public ResponseEntity<List<CourseClass>> getCourseClassesByTeacherId(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
+            @PathVariable Long teacherId) {
+        accessControlService.assertCanAccessTeacherCourse(requesterUserId, teacherId);
         List<CourseClass> courseClasses = courseClassService.findByTeacherId(teacherId);
         return ResponseEntity.ok(courseClasses);
     }
@@ -68,7 +75,9 @@ public class CourseClassController {
     // 根据课程ID和教师ID获取班级
     @GetMapping("/course/{courseId}/teacher/{teacherId}")
     public ResponseEntity<List<CourseClass>> getCourseClassesByCourseAndTeacher(
+            @RequestHeader("X-User-Id") Integer requesterUserId,
             @PathVariable Long courseId, @PathVariable Long teacherId) {
+        accessControlService.assertCanAccessTeacherCourse(requesterUserId, teacherId);
         List<CourseClass> courseClasses = courseClassService.findByCourseIdAndTeacherId(courseId, teacherId);
         return ResponseEntity.ok(courseClasses);
     }

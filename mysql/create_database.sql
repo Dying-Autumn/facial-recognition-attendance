@@ -49,6 +49,8 @@ CREATE TABLE `Function` (
     `FunctionName` VARCHAR(100) NOT NULL COMMENT '功能名称(如:查看学生信息、新增学生信息)',
     `FunctionCode` VARCHAR(100) NOT NULL COMMENT '功能代码/标识符',
     `ModuleName` VARCHAR(50) COMMENT '所属模块(如:学生管理、课程管理)',
+    `Url` VARCHAR(255) DEFAULT NULL COMMENT '功能对应的前端路由或后端接口路径',
+    `Method` VARCHAR(20) DEFAULT NULL COMMENT 'HTTP方法(GET/POST/...)',
     `Description` VARCHAR(200) COMMENT '功能描述',
     `SortOrder` INT DEFAULT 0 COMMENT '排序顺序',
     `IsActive` TINYINT(1) DEFAULT 1 COMMENT '是否启用',

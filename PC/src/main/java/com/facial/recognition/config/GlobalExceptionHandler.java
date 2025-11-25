@@ -1,5 +1,6 @@
 package com.facial.recognition.config;
 
+import com.facial.recognition.exception.AccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -33,6 +34,18 @@ public class GlobalExceptionHandler {
     /**
      * 处理数据完整性约束违反（外键约束等）
      */
+    /**
+     * 处理访问控制异常
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException e) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("error", "权限不足");
+        response.put("message", e.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException e) {
         Map<String, Object> response = new HashMap<>();

@@ -1174,8 +1174,30 @@ function deleteRole(id, roleName) {
 
 // 分配权限
 function assignPermissions(roleId, roleName) {
-    // TODO: 实现权限分配功能
-    showToast(`为角色"${roleName}"分配权限功能正在开发中...`, 'info');
+    pendingPermissionRoleId = roleId;
+    
+    // 确保权限管理子菜单展开
+    const permissionMenu = document.querySelector('.menu-item[data-target="permission"]');
+    if (permissionMenu) {
+        const submenu = permissionMenu.nextElementSibling;
+        if (submenu && !submenu.classList.contains('show')) {
+            permissionMenu.click();
+        }
+    }
+    
+    // 切换到权限分配页面
+    const permissionPageEntry = document.querySelector('.submenu-item[data-target="permission-assign"]');
+    if (!permissionPageEntry) {
+        showToast('未找到权限分配页面入口', 'error');
+        return;
+    }
+    permissionPageEntry.click();
+    
+    // 重新加载页面数据并尝试选中目标角色
+    loadPermissionAssignPage();
+    setTimeout(applyPendingPermissionRoleSelection, 200);
+    
+    showToast(`已为角色"${roleName}"打开权限分配页面`, 'info');
 }
 
 // 加载所有角色（保留旧的方法名，用于其他地方调用）
@@ -2002,6 +2024,7 @@ function initPublishTaskPage() {
 let currentRoleId = null;
 let allFunctions = [];
 let rolePermissions = new Set();
+let pendingPermissionRoleId = null;
 
 // 初始化权限分配页面
 async function initPermissionAssignPage() {
@@ -2017,6 +2040,9 @@ async function loadRolesForPermission() {
         const roles = await RoleAPI.getAll();
         select.innerHTML = '<option value="">请选择角色</option>' +
             roles.map(role => `<option value="${role.roleId}">${role.roleName}</option>`).join('');
+        
+        // 如果有待跳转的角色，尝试自动选中
+        applyPendingPermissionRoleSelection();
     } catch (error) {
         console.error('加载角色失败:', error);
         showToast('加载角色失败', 'error');
@@ -2161,7 +2187,7 @@ function renderPermissionSection(title, groups, roleId) {
     groups.forEach(group => {
         html += `<div class="permission-group" style="margin-bottom: 20px;">
             <h4 style="margin-bottom: 10px; font-size: 1.1em; color: #666;">${group.title}</h4>
-            <div class="permission-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px;">`;
+            <div class="permission-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 12px;">`;
         
         group.permissions.forEach(perm => {
             // 查找匹配的功能（可能多个功能有相同的代码，取第一个）
@@ -2173,17 +2199,17 @@ function renderPermissionSection(title, groups, roleId) {
             const displayFunctionId = functionId || perm.code;
             
             html += `
-                <label class="permission-item" style="display: flex; align-items: flex-start; padding: 10px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: ${isChecked ? '#e8f5e9' : '#fff'};">
+                <label class="permission-item" style="display: flex; align-items: flex-start; padding: 14px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; background: ${isChecked ? '#e8f5e9' : '#fff'}; transition: all 0.2s; min-width: 0;">
                     <input type="checkbox" 
                            class="permission-checkbox" 
                            data-function-id="${displayFunctionId}" 
                            data-function-code="${perm.code}"
                            ${isChecked ? 'checked' : ''}
                            ${!functionId ? 'disabled title="该功能在系统中不存在"' : ''}
-                           style="margin-right: 10px; margin-top: 3px;">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 500; margin-bottom: 4px;">${perm.name}${!functionId ? ' <span style="color: #999; font-size: 0.9em;">(未配置)</span>' : ''}</div>
-                        <div style="font-size: 0.9em; color: #666;">${perm.desc}</div>
+                           style="margin-right: 12px; margin-top: 2px; flex-shrink: 0; width: 18px; height: 18px; cursor: pointer;">
+                    <div style="flex: 1; min-width: 0; word-wrap: break-word; word-break: break-word; white-space: normal; line-height: 1.5;">
+                        <div style="font-weight: 500; margin-bottom: 6px; color: #2c3e50; font-size: 14px;">${perm.name}${!functionId ? ' <span style="color: #999; font-size: 0.85em;">(未配置)</span>' : ''}</div>
+                        <div style="font-size: 0.85em; color: #666; line-height: 1.4;">${perm.desc}</div>
                     </div>
                 </label>
             `;
@@ -2203,21 +2229,21 @@ function renderOtherPermissions(modules) {
     Object.keys(modules).sort().forEach(moduleName => {
         html += `<div class="permission-group" style="margin-bottom: 20px;">
             <h4 style="margin-bottom: 10px; font-size: 1.1em; color: #666;">${moduleName}</h4>
-            <div class="permission-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px;">`;
+            <div class="permission-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 12px;">`;
         
         modules[moduleName].forEach(func => {
             const isChecked = rolePermissions.has(func.functionId);
             html += `
-                <label class="permission-item" style="display: flex; align-items: flex-start; padding: 10px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: ${isChecked ? '#e8f5e9' : '#fff'};">
+                <label class="permission-item" style="display: flex; align-items: flex-start; padding: 14px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; background: ${isChecked ? '#e8f5e9' : '#fff'}; transition: all 0.2s; min-width: 0;">
                     <input type="checkbox" 
                            class="permission-checkbox" 
                            data-function-id="${func.functionId}" 
                            data-function-code="${func.functionCode}"
                            ${isChecked ? 'checked' : ''}
-                           style="margin-right: 10px; margin-top: 3px;">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 500; margin-bottom: 4px;">${func.functionName}</div>
-                        <div style="font-size: 0.9em; color: #666;">${func.description || func.functionCode}</div>
+                           style="margin-right: 12px; margin-top: 2px; flex-shrink: 0; width: 18px; height: 18px; cursor: pointer;">
+                    <div style="flex: 1; min-width: 0; word-wrap: break-word; word-break: break-word; white-space: normal; line-height: 1.5;">
+                        <div style="font-weight: 500; margin-bottom: 6px; color: #2c3e50; font-size: 14px;">${func.functionName}</div>
+                        <div style="font-size: 0.85em; color: #666; line-height: 1.4;">${func.description || func.functionCode}</div>
                     </div>
                 </label>
             `;
@@ -2337,6 +2363,26 @@ function loadPermissionAssignPage() {
     } else {
         initPermissionAssignPage();
     }
+}
+
+// 尝试应用待分配角色选择
+function applyPendingPermissionRoleSelection() {
+    if (!pendingPermissionRoleId) return false;
+    
+    const select = document.getElementById('permission-role-select');
+    if (!select) return false;
+    
+    const targetValue = String(pendingPermissionRoleId);
+    const hasOption = Array.from(select.options).some(opt => opt.value === targetValue);
+    if (!hasOption) {
+        return false;
+    }
+    
+    select.value = targetValue;
+    const roleId = pendingPermissionRoleId;
+    pendingPermissionRoleId = null;
+    onRoleSelected(targetValue);
+    return true;
 }
 
 // 绑定权限复选框变化事件
