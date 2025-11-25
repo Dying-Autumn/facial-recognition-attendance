@@ -54,4 +54,7 @@ public interface AttendanceTaskService {
 
     // 获取教师考勤任务统计详情
     java.util.Map<String, Object> getTeacherAttendanceTaskStatistics(Long teacherId);
+    
+    // 获取班级考勤状况（某个考勤任务对应的所有学生考勤状态）
+    java.util.List<com.facial.recognition.dto.ClassAttendanceStatusDTO> getClassAttendanceStatus(Long taskId);
 }

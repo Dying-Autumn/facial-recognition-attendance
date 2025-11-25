@@ -1,7 +1,14 @@
 package com.facial.recognition.service.impl;
 
+import com.facial.recognition.dto.ClassAttendanceStatusDTO;
+import com.facial.recognition.pojo.AttendanceRecord;
 import com.facial.recognition.pojo.AttendanceTask;
+import com.facial.recognition.pojo.Student;
+import com.facial.recognition.pojo.StudentCourseClass;
+import com.facial.recognition.repository.AttendanceRecordRepository;
 import com.facial.recognition.repository.AttendanceTaskRepository;
+import com.facial.recognition.repository.StudentCourseClassRepository;
+import com.facial.recognition.repository.StudentRepository;
 import com.facial.recognition.service.AttendanceTaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -19,6 +27,15 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
 
     @Autowired
     private AttendanceTaskRepository attendanceTaskRepository;
+    
+    @Autowired
+    private AttendanceRecordRepository attendanceRecordRepository;
+    
+    @Autowired
+    private StudentCourseClassRepository studentCourseClassRepository;
+    
+    @Autowired
+    private StudentRepository studentRepository;
 
     @Override
     public AttendanceTask createAttendanceTask(AttendanceTask attendanceTask) {
@@ -171,5 +188,57 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
             .count());
 
         return statistics;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClassAttendanceStatusDTO> getClassAttendanceStatus(Long taskId) {
+        // 1. 获取考勤任务
+        Optional<AttendanceTask> taskOpt = attendanceTaskRepository.findById(taskId);
+        if (!taskOpt.isPresent()) {
+            throw new RuntimeException("考勤任务不存在: " + taskId);
+        }
+        
+        AttendanceTask task = taskOpt.get();
+        Long courseClassId = task.getCourseClassId();
+        
+        // 2. 获取该班级的所有学生（通过 StudentCourseClass，状态为正常的学生）
+        // 注意：数据库 Status 是 TINYINT(1)，1表示正常，0表示退课
+        // 由于实体类中 Status 是 String，这里使用 "1" 字符串
+        List<StudentCourseClass> enrollments = studentCourseClassRepository
+            .findByClassIdAndStatus(courseClassId, "1");
+        
+        // 3. 获取该任务的考勤记录
+        List<AttendanceRecord> records = attendanceRecordRepository.findByTaskId(taskId);
+        Map<Long, AttendanceRecord> recordMap = records.stream()
+            .collect(Collectors.toMap(AttendanceRecord::getStudentId, r -> r));
+        
+        // 4. 构建返回列表：所有学生默认未签到，如果有考勤记录则更新状态
+        return enrollments.stream().map(enrollment -> {
+            Long studentId = enrollment.getStudentId();
+            Optional<Student> studentOpt = studentRepository.findById(studentId);
+            
+            if (!studentOpt.isPresent()) {
+                // 如果学生不存在，跳过
+                return null;
+            }
+            
+            Student student = studentOpt.get();
+            ClassAttendanceStatusDTO dto = new ClassAttendanceStatusDTO(
+                student.getStudentId(),
+                student.getStudentNumber(),
+                student.getStudentName()
+            );
+            
+            // 如果有考勤记录，更新状态
+            AttendanceRecord record = recordMap.get(studentId);
+            if (record != null) {
+                dto.setAttendanceResult(record.getAttendanceResult());
+                dto.setCheckInTime(record.getCheckInTime());
+                dto.setRemark(record.getRemark());
+            }
+            
+            return dto;
+        }).filter(dto -> dto != null).collect(Collectors.toList());
     }
 }

@@ -23,12 +23,6 @@ public class StudentCourseClass implements Serializable {
     @Column(name = "Status")
     private String status; // 状态：ENROLLED, DROPPED, COMPLETED
 
-    @Column(name = "FinalGrade")
-    private Double finalGrade; // 最终成绩
-
-    @Column(name = "GradeLevel")
-    private String gradeLevel; // 成绩等级：A, B, C, D, F
-
     public StudentCourseClass() {}
 
     public StudentCourseClass(Long studentId, Long classId) {
@@ -50,11 +44,5 @@ public class StudentCourseClass implements Serializable {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-
-    public Double getFinalGrade() { return finalGrade; }
-    public void setFinalGrade(Double finalGrade) { this.finalGrade = finalGrade; }
-
-    public String getGradeLevel() { return gradeLevel; }
-    public void setGradeLevel(String gradeLevel) { this.gradeLevel = gradeLevel; }
 }
 

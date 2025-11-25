@@ -602,6 +602,21 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- 考勤状况显示区域 -->
+                    <div id="attendance-status-container" style="display: none; margin-top: 20px;">
+                        <div class="card">
+                            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                <div class="card-title">班级考勤状况</div>
+                                <button class="btn btn-sm btn-secondary" onclick="closeAttendanceStatus()" style="margin: 0;">
+                                    关闭
+                                </button>
+                            </div>
+                            <div class="card-body" id="attendance-status-content">
+                                <!-- 考勤状况内容将在这里动态显示 -->
+                            </div>
+                        </div>
+                    </div>
                 `;
                 setTimeout(initStatisticsPage, 100);
                 break;
@@ -2779,6 +2794,7 @@ function initStatisticsPage() {
                             <th>结束时间</th>
                             <th>状态</th>
                             <th>位置范围</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="statistics-table-body">
@@ -2801,7 +2817,7 @@ function initStatisticsPage() {
                 if (!tbody) return;
 
                 if (!tasks || tasks.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无考勤任务数据</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">暂无考勤任务数据</td></tr>';
                     return;
                 }
 
@@ -2814,6 +2830,11 @@ function initStatisticsPage() {
                             <td>${formatDateTime(task.endTime)}</td>
                             <td><span class="status-${status.toLowerCase()}">${status}</span></td>
                             <td>${task.locationRange || '未设置'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-accent" onclick="viewAttendanceStatus(${task.taskId})">
+                                    查看考勤状况
+                                </button>
+                            </td>
                         </tr>
                     `;
                 }).join('');
@@ -2822,7 +2843,7 @@ function initStatisticsPage() {
                 console.error('加载任务详情失败:', error);
                 const tbody = document.getElementById('statistics-table-body');
                 if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">加载失败</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">加载失败</td></tr>';
                 }
             });
     }
@@ -2847,4 +2868,152 @@ function initStatisticsPage() {
             minute: '2-digit'
         });
     }
+}
+
+// 格式化日期时间（全局函数）
+function formatDateTime(dateTimeStr) {
+    if (!dateTimeStr) return '-';
+    const date = new Date(dateTimeStr);
+    return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// 查看班级考勤状况
+function viewAttendanceStatus(taskId) {
+    const container = document.getElementById('attendance-status-container');
+    const contentDiv = document.getElementById('attendance-status-content');
+    
+    if (!container || !contentDiv) {
+        showToast('页面元素未找到，请刷新页面重试', 'error');
+        return;
+    }
+
+    // 显示加载状态
+    container.style.display = 'block';
+    contentDiv.innerHTML = '<div style="text-align: center; padding: 40px;">加载中...</div>';
+    
+    // 滚动到考勤状况区域
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // 调用API获取考勤状况
+    AttendanceTaskAPI.getClassAttendanceStatus(taskId)
+        .then(statusList => {
+            if (!statusList || statusList.length === 0) {
+                contentDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">暂无考勤数据</div>';
+                return;
+            }
+
+            // 统计考勤情况
+            const total = statusList.length;
+            const checkedIn = statusList.filter(s => s.attendanceResult !== '未签到').length;
+            const notCheckedIn = total - checkedIn;
+            const attendanceRate = total > 0 ? ((checkedIn / total) * 100).toFixed(1) : 0;
+
+            // 按考勤状态分组统计
+            const statusCounts = {};
+            statusList.forEach(s => {
+                const status = s.attendanceResult || '未签到';
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+            });
+
+            // 构建统计信息HTML
+            const statsHtml = `
+                <div style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 15px;">
+                        <div style="font-size: 1.1em;">
+                            <strong>总人数:</strong> <span style="color: #333; font-size: 1.2em;">${total}</span>
+                        </div>
+                        <div style="font-size: 1.1em;">
+                            <strong>已签到:</strong> <span style="color: #28a745; font-size: 1.2em;">${checkedIn}</span>
+                        </div>
+                        <div style="font-size: 1.1em;">
+                            <strong>未签到:</strong> <span style="color: #6c757d; font-size: 1.2em;">${notCheckedIn}</span>
+                        </div>
+                        <div style="font-size: 1.1em;">
+                            <strong>出勤率:</strong> <span style="color: #007bff; font-size: 1.2em;">${attendanceRate}%</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                        ${Object.entries(statusCounts).map(([status, count]) => 
+                            `<span style="padding: 8px 15px; background: ${getStatusColor(status)}; color: white; border-radius: 4px; font-size: 0.95em;">
+                                <strong>${status}:</strong> ${count}
+                            </span>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+
+            // 构建表格HTML
+            const tableHtml = `
+                ${statsHtml}
+                <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>学号</th>
+                                <th>姓名</th>
+                                <th>考勤状态</th>
+                                <th>签到时间</th>
+                                <th>备注</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${statusList.map(student => `
+                                <tr>
+                                    <td>${student.studentNumber || 'N/A'}</td>
+                                    <td>${student.studentName || 'N/A'}</td>
+                                    <td>
+                                        <span style="padding: 4px 10px; border-radius: 4px; background: ${getStatusColor(student.attendanceResult)}; color: white; font-size: 0.9em;">
+                                            ${student.attendanceResult || '未签到'}
+                                        </span>
+                                    </td>
+                                    <td>${student.checkInTime ? formatDateTime(student.checkInTime) : '-'}</td>
+                                    <td>${student.remark || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            contentDiv.innerHTML = tableHtml;
+            
+            // 再次滚动到考勤状况区域，确保用户能看到
+            setTimeout(() => {
+                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        })
+        .catch(error => {
+            console.error('加载考勤状况失败:', error);
+            contentDiv.innerHTML = `<div style="text-align: center; padding: 40px; color: #dc3545;">
+                <p style="font-size: 1.1em; margin-bottom: 10px;">加载失败</p>
+                <p style="color: #666; font-size: 0.9em;">${error.message || '未知错误'}</p>
+            </div>`;
+        });
+}
+
+// 关闭考勤状况显示
+function closeAttendanceStatus() {
+    const container = document.getElementById('attendance-status-container');
+    if (container) {
+        container.style.display = 'none';
+    }
+}
+
+// 获取考勤状态对应的颜色
+function getStatusColor(status) {
+    const colorMap = {
+        '未签到': '#6c757d',
+        '正常': '#28a745',
+        '迟到': '#ffc107',
+        '早退': '#fd7e14',
+        '缺勤': '#dc3545',
+        '请假': '#17a2b8'
+    };
+    return colorMap[status] || '#6c757d';
 }

@@ -275,6 +275,34 @@ public class AttendanceDbHelper extends SQLiteOpenHelper {
         }
         return list;
     }
+    
+    /**
+     * 根据学生ID获取签到记录列表（只返回该学生的记录）
+     */
+    public java.util.List<CheckinDisplay> getCheckinDisplayListByStudentId(Long studentId) {
+        if (studentId == null) {
+            return new java.util.ArrayList<>();
+        }
+        
+        java.util.List<CheckinDisplay> list = new java.util.ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        String sql = "SELECT c.RecordID, c." + COL_TIMESTAMP + ", c." + COL_SUCCESS + ", co.CourseName FROM " + TABLE_CHECKINS + " c " +
+                "LEFT JOIN " + TABLE_COURSES + " co ON c." + COL_COURSE_ID + " = co.CourseID " +
+                "WHERE c." + COL_STUDENT_ID + " = ? ORDER BY c." + COL_TIMESTAMP + " DESC";
+        android.database.Cursor cur = db.rawQuery(sql, new String[]{String.valueOf(studentId)});
+        if (cur != null) {
+            while (cur.moveToNext()) {
+                long id = cur.getLong(0);
+                long ts = cur.getLong(1);
+                String result = cur.getString(2);
+                boolean success = "正常".equals(result);
+                String courseName = cur.getString(3);
+                list.add(new CheckinDisplay(id, courseName, success, ts));
+            }
+            cur.close();
+        }
+        return list;
+    }
 
     public StudentSimple findStudentByNumber(String number) {
         SQLiteDatabase db = getReadableDatabase();

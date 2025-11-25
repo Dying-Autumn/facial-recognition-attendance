@@ -155,33 +155,6 @@ public class StudentCourseClassController {
         }
     }
 
-    // 更新成绩（注意：StudentCourseClass使用复合主键，此方法需要studentId和classId）
-    @PatchMapping("/{id}/grade")
-    public ResponseEntity<Map<String, Object>> updateGrade(
-            @PathVariable Long id, @RequestParam(required = false) Double finalGrade, 
-            @RequestParam(required = false) String gradeLevel) {
-        if (id == null || id <= 0) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "无效的ID参数");
-            return ResponseEntity.badRequest().body(response);
-        }
-        if (gradeLevel != null && ("undefined".equalsIgnoreCase(gradeLevel) || "null".equalsIgnoreCase(gradeLevel))) {
-            gradeLevel = null;
-        }
-        try {
-            StudentCourseClass enrollment = studentCourseClassService.updateGrade(id, finalGrade, gradeLevel);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", enrollment);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
-    }
 
     // 统计班级中的学生数量
     @GetMapping("/class/{courseClassId}/count")

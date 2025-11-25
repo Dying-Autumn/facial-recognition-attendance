@@ -85,6 +85,14 @@ public class HomeFragment extends Fragment {
     private ActivityResultLauncher<Intent> cameraLauncher;
     private Context appContext;
     private static final String TAG = "HomeFragment";
+    
+    // 存储课程和对应的考勤任务
+    private java.util.Map<Long, com.example.studentattendanceterminal.models.AttendanceTask> courseTaskMap = new java.util.HashMap<>();
+    // 存储课程名称到班级ID的映射
+    private java.util.Map<String, Long> courseNameToClassIdMap = new java.util.HashMap<>();
+    private android.os.Handler pollingHandler;
+    private static final long POLLING_INTERVAL = 30000; // 30秒轮询一次
+    private Runnable pollingRunnable;
 
     @Nullable
     @Override
@@ -110,10 +118,12 @@ public class HomeFragment extends Fragment {
         // 初始化高德地图定位SDK
         initAMapLocation();
 
-        // 加载课程到 Spinner
+        // 加载课程到 Spinner（只加载有考勤任务的课程）
         loadCoursesToSpinner();
         // 进入页面时加载现有签到记录
         reloadRecords();
+        // 启动轮询机制检测新的考勤任务
+        startPollingAttendanceTasks();
 
         btnStartCheckin.setOnClickListener(v -> {
             // 先判断是否已登录（存在 student_id）
@@ -155,6 +165,24 @@ public class HomeFragment extends Fragment {
             mLocationClient.onDestroy(); // 销毁定位客户端
             mLocationClient = null;
         }
+        // 停止轮询
+        stopPollingAttendanceTasks();
+    }
+    
+    @Override
+    public void onResume() {
+        super.onResume();
+        // 页面恢复时重新加载课程和考勤任务
+        loadCoursesToSpinner();
+        // 重新加载签到记录（可能用户在其他页面登录或退出登录了）
+        reloadRecords();
+    }
+    
+    @Override
+    public void onPause() {
+        super.onPause();
+        // 页面暂停时停止轮询以节省资源
+        stopPollingAttendanceTasks();
     }
 
     /**
@@ -428,8 +456,32 @@ public class HomeFragment extends Fragment {
 
         // 读取选中的课程与已登录学生
         AttendanceDbHelper.Course selectedCourse = (AttendanceDbHelper.Course) spinnerCourse.getSelectedItem();
-        Long courseId = selectedCourse != null ? selectedCourse.id : null;
+        if (selectedCourse == null) {
+            showToast("请选择课程");
+            return;
+        }
+        
         Long studentId = getLoggedInStudentId();
+        if (studentId == null) {
+            showToast("请先登录");
+            return;
+        }
+        
+        // 检查该课程是否有活跃的考勤任务
+        Long classId = getClassIdByCourseName(selectedCourse.name);
+        if (classId == null) {
+            showToast("无法找到该课程的班级信息");
+            return;
+        }
+        
+        com.example.studentattendanceterminal.models.AttendanceTask task = courseTaskMap.get(classId);
+        if (task == null || (!task.isActive() && !"ACTIVE".equals(task.getStatus()))) {
+            showToast("该课程当前没有需要签到的考勤任务");
+            return;
+        }
+        
+        Long courseId = selectedCourse.id;
+        final Long taskId = task.getTaskId(); // 保存taskId以便在异步线程中使用
 
         new Thread(() -> {
             Context ctx = appContext != null ? appContext : requireContext();
@@ -442,7 +494,7 @@ public class HomeFragment extends Fragment {
                     
                     // 如果本地保存成功且签到判定为有效，尝试上传服务器
                     if (success) {
-                        uploadAttendanceRecord(studentId, courseId, lat, lon, base64Image, ts);
+                        uploadAttendanceRecord(studentId, courseId, taskId, lat, lon, base64Image, ts);
                     }
                 } else {
                     showToast("保存失败");
@@ -451,9 +503,9 @@ public class HomeFragment extends Fragment {
         }).start();
     }
     
-    private void uploadAttendanceRecord(Long studentId, Long courseId, double lat, double lon, String base64Image, long ts) {
+    private void uploadAttendanceRecord(Long studentId, Long courseId, Long taskId, double lat, double lon, String base64Image, long ts) {
         com.example.studentattendanceterminal.models.AttendanceDTO record = 
-            new com.example.studentattendanceterminal.models.AttendanceDTO(studentId, courseId, lat, lon, base64Image, ts, "正常");
+            new com.example.studentattendanceterminal.models.AttendanceDTO(studentId, courseId, taskId, lat, lon, base64Image, ts, "正常");
             
         com.example.studentattendanceterminal.network.ApiClient.getStudentService()
             .uploadAttendance(record)
@@ -493,20 +545,8 @@ public class HomeFragment extends Fragment {
                                      retrofit2.Response<java.util.List<com.example.studentattendanceterminal.models.StudentCourse>> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         java.util.List<com.example.studentattendanceterminal.models.StudentCourse> serverCourses = response.body();
-                        // 转换为本地 Course 对象并保存到本地数据库
-                        Context ctx = appContext != null ? appContext : requireContext();
-                        AttendanceDbHelper db = AttendanceDbHelper.getInstance(ctx);
-                        java.util.List<AttendanceDbHelper.Course> localCourses = new java.util.ArrayList<>();
-                        for (com.example.studentattendanceterminal.models.StudentCourse sc : serverCourses) {
-                            // 检查课程是否已存在，避免重复插入
-                            long courseId = db.insertCourseIfNotExists(sc.getCourseName());
-                            localCourses.add(new AttendanceDbHelper.Course(courseId, sc.getCourseName()));
-                        }
-                        // 更新 Spinner
-                        android.widget.ArrayAdapter<AttendanceDbHelper.Course> adapter = 
-                            new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, localCourses);
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                        spinnerCourse.setAdapter(adapter);
+                        // 检查每个课程是否有活跃的考勤任务
+                        checkCoursesWithTasks(serverCourses);
                     } else {
                         // 如果网络请求失败，使用本地数据
                         loadCoursesFromLocal();
@@ -515,10 +555,111 @@ public class HomeFragment extends Fragment {
 
                 @Override
                 public void onFailure(retrofit2.Call<java.util.List<com.example.studentattendanceterminal.models.StudentCourse>> call, Throwable t) {
+                    LogUtil.e(TAG, "获取课程列表失败: " + t.getMessage());
                     // 网络请求失败，使用本地数据
                     loadCoursesFromLocal();
                 }
             });
+    }
+    
+    /**
+     * 检查课程是否有活跃的考勤任务，只显示有考勤任务的课程
+     */
+    private void checkCoursesWithTasks(java.util.List<com.example.studentattendanceterminal.models.StudentCourse> courses) {
+        if (courses == null || courses.isEmpty()) {
+            loadCoursesFromLocal();
+            return;
+        }
+        
+        courseTaskMap.clear();
+        final java.util.List<com.example.studentattendanceterminal.models.StudentCourse> coursesWithTasks = new java.util.ArrayList<>();
+        final java.util.concurrent.atomic.AtomicInteger completedCount = new java.util.concurrent.atomic.AtomicInteger(0);
+        final int totalCount = courses.size();
+        
+        if (totalCount == 0) {
+            loadCoursesFromLocal();
+            return;
+        }
+        
+        for (com.example.studentattendanceterminal.models.StudentCourse course : courses) {
+            if (course.getClassId() == null) {
+                completedCount.incrementAndGet();
+                checkAllCompleted(coursesWithTasks, completedCount, totalCount);
+                continue;
+            }
+            
+            // 检查该课程班级是否有活跃的考勤任务
+            com.example.studentattendanceterminal.network.ApiClient.getStudentService()
+                .getAttendanceTasksByClassId(course.getClassId())
+                .enqueue(new retrofit2.Callback<java.util.List<com.example.studentattendanceterminal.models.AttendanceTask>>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<java.util.List<com.example.studentattendanceterminal.models.AttendanceTask>> call,
+                                         retrofit2.Response<java.util.List<com.example.studentattendanceterminal.models.AttendanceTask>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            java.util.List<com.example.studentattendanceterminal.models.AttendanceTask> tasks = response.body();
+                            // 查找活跃的考勤任务
+                            for (com.example.studentattendanceterminal.models.AttendanceTask task : tasks) {
+                                if (task.isActive() || "ACTIVE".equals(task.getStatus())) {
+                                    courseTaskMap.put(course.getClassId(), task);
+                                    synchronized (coursesWithTasks) {
+                                        coursesWithTasks.add(course);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        completedCount.incrementAndGet();
+                        checkAllCompleted(coursesWithTasks, completedCount, totalCount);
+                    }
+                    
+                    @Override
+                    public void onFailure(retrofit2.Call<java.util.List<com.example.studentattendanceterminal.models.AttendanceTask>> call, Throwable t) {
+                        LogUtil.e(TAG, "获取考勤任务失败: " + t.getMessage());
+                        completedCount.incrementAndGet();
+                        checkAllCompleted(coursesWithTasks, completedCount, totalCount);
+                    }
+                });
+        }
+    }
+    
+    /**
+     * 检查所有请求是否完成，完成后更新UI
+     */
+    private void checkAllCompleted(java.util.List<com.example.studentattendanceterminal.models.StudentCourse> coursesWithTasks,
+                                   java.util.concurrent.atomic.AtomicInteger completedCount, int totalCount) {
+        if (completedCount.get() >= totalCount) {
+            if (getActivity() == null) return;
+            
+            getActivity().runOnUiThread(() -> {
+                if (coursesWithTasks.isEmpty()) {
+                    // 如果没有有考勤任务的课程，显示提示
+                    android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(
+                        requireContext(), android.R.layout.simple_spinner_item, 
+                        new String[]{"暂无需要签到的课程"});
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spinnerCourse.setAdapter(adapter);
+                    showToast("当前没有需要签到的课程");
+                } else {
+                    // 更新Spinner，只显示有考勤任务的课程
+                    Context ctx = appContext != null ? appContext : requireContext();
+                    AttendanceDbHelper db = AttendanceDbHelper.getInstance(ctx);
+                    java.util.List<AttendanceDbHelper.Course> localCourses = new java.util.ArrayList<>();
+                    courseNameToClassIdMap.clear(); // 清空旧的映射
+                    for (com.example.studentattendanceterminal.models.StudentCourse sc : coursesWithTasks) {
+                        long courseId = db.insertCourseIfNotExists(sc.getCourseName());
+                        localCourses.add(new AttendanceDbHelper.Course(courseId, sc.getCourseName()));
+                        // 保存课程名称到班级ID的映射
+                        if (sc.getCourseName() != null && sc.getClassId() != null) {
+                            courseNameToClassIdMap.put(sc.getCourseName(), sc.getClassId());
+                        }
+                    }
+                    android.widget.ArrayAdapter<AttendanceDbHelper.Course> adapter = 
+                        new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, localCourses);
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spinnerCourse.setAdapter(adapter);
+                }
+            });
+        }
     }
     
     private void loadCoursesFromLocal() {
@@ -531,9 +672,18 @@ public class HomeFragment extends Fragment {
     }
 
     private void reloadRecords() {
+        // 只有登录后才能查看签到记录
+        Long studentId = getLoggedInStudentId();
+        if (studentId == null) {
+            // 未登录时清空记录列表
+            adapter.setData(new java.util.ArrayList<>());
+            return;
+        }
+        
+        // 只加载当前登录学生的签到记录
         Context ctx = appContext != null ? appContext : requireContext();
         AttendanceDbHelper db = AttendanceDbHelper.getInstance(ctx);
-        java.util.List<AttendanceDbHelper.CheckinDisplay> list = db.getCheckinDisplayList();
+        java.util.List<AttendanceDbHelper.CheckinDisplay> list = db.getCheckinDisplayListByStudentId(studentId);
         java.util.List<RecordItem> items = new java.util.ArrayList<>();
         for (AttendanceDbHelper.CheckinDisplay d : list) {
             String timeStr = formatTime(d.timestamp);
@@ -571,6 +721,55 @@ public class HomeFragment extends Fragment {
             }
         } catch (Exception e) {
             LogUtil.e(TAG, "Toast error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 根据课程名称获取班级ID（从缓存映射中查找）
+     */
+    private Long getClassIdByCourseName(String courseName) {
+        return courseNameToClassIdMap.get(courseName);
+    }
+    
+    /**
+     * 启动轮询机制，定期检查新的考勤任务
+     */
+    private void startPollingAttendanceTasks() {
+        if (pollingHandler == null) {
+            pollingHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        }
+        
+        stopPollingAttendanceTasks(); // 先停止之前的轮询
+        
+        pollingRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Long studentId = getLoggedInStudentId();
+                if (studentId != null && isResumed()) {
+                    // 重新加载课程列表，检查是否有新的考勤任务
+                    loadCoursesToSpinner();
+                    LogUtil.d(TAG, "轮询检查考勤任务");
+                }
+                
+                // 安排下一次轮询
+                if (pollingHandler != null && pollingRunnable != null) {
+                    pollingHandler.postDelayed(pollingRunnable, POLLING_INTERVAL);
+                }
+            }
+        };
+        
+        pollingHandler.postDelayed(pollingRunnable, POLLING_INTERVAL);
+        LogUtil.i(TAG, "启动考勤任务轮询机制，间隔: " + POLLING_INTERVAL / 1000 + "秒");
+    }
+    
+    /**
+     * 停止轮询机制
+     */
+    private void stopPollingAttendanceTasks() {
+        if (pollingHandler != null && pollingRunnable != null) {
+            pollingHandler.removeCallbacks(pollingRunnable);
+            pollingRunnable = null;
+            LogUtil.i(TAG, "停止考勤任务轮询机制");
         }
     }
 

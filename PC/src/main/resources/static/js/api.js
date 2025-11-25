@@ -253,6 +253,11 @@ class AttendanceTaskAPI {
     static getTeacherStatistics(teacherId) {
         return API.get(`/attendance-tasks/teacher/${teacherId}/statistics`);
     }
+
+    // 获取班级考勤状况（某个考勤任务对应的所有学生考勤状态）
+    static getClassAttendanceStatus(taskId) {
+        return API.get(`/attendance-tasks/${taskId}/attendance-status`);
+    }
 }
 
 // ========== 学生选课API ==========

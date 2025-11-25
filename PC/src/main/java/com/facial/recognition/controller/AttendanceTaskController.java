@@ -151,4 +151,18 @@ public class AttendanceTaskController {
         Map<String, Object> statistics = attendanceTaskService.getTeacherAttendanceTaskStatistics(teacherId);
         return ResponseEntity.ok(statistics);
     }
+
+    // 获取班级考勤状况（某个考勤任务对应的所有学生考勤状态）
+    @GetMapping("/{taskId}/attendance-status")
+    public ResponseEntity<List<com.facial.recognition.dto.ClassAttendanceStatusDTO>> getClassAttendanceStatus(
+            @PathVariable Long taskId) {
+        try {
+            List<com.facial.recognition.dto.ClassAttendanceStatusDTO> statusList = 
+                attendanceTaskService.getClassAttendanceStatus(taskId);
+            return ResponseEntity.ok(statusList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }
