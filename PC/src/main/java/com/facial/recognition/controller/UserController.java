@@ -1,5 +1,8 @@
 package com.facial.recognition.controller;
 
+import com.facial.recognition.dto.LoginDTO;
+import com.facial.recognition.dto.LoginResponseDTO;
+import com.facial.recognition.dto.RegisterDTO;
 import com.facial.recognition.pojo.User;
 import com.facial.recognition.service.IUserService;
 import org.slf4j.Logger;
@@ -47,28 +50,62 @@ public class UserController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+    
+    // 根据角色ID获取用户列表
+    @GetMapping("/role/{roleId}")
+    public ResponseEntity<List<User>> getUsersByRoleId(@PathVariable Integer roleId) {
+        List<User> users = userService.findByRoleId(roleId);
+        return ResponseEntity.ok(users);
+    }
 
-    // 登录接口
+    // 登录接口 - 返回完整用户信息
     @PostMapping("/login")
-    public ResponseEntity<User> login(@RequestBody com.facial.recognition.dto.LoginDTO loginDTO) {
+    public ResponseEntity<?> login(@RequestBody LoginDTO loginDTO) {
         logger.info("收到登录请求: 用户名 [{}]", loginDTO.getUsername());
         
         return userService.findByUsername(loginDTO.getUsername())
                 .map(user -> {
-                    // 注意：生产环境不建议在日志中打印密码，这里仅为了调试保留部分脱敏信息或不打印
                     logger.info("数据库找到用户: ID={}", user.getUserID());
                     if (user.getPassword().equals(loginDTO.getPassword())) {
                         logger.info("密码匹配成功！用户: {}", user.getUserName());
-                        return ResponseEntity.ok(user);
+                        // 返回完整的登录响应信息
+                        LoginResponseDTO response = userService.getLoginResponse(user);
+                        return ResponseEntity.ok(response);
                     } else {
                         logger.warn("密码不匹配！尝试登录用户: {}", loginDTO.getUsername());
-                        return ResponseEntity.status(401).<User>build();
+                        Map<String, String> error = new HashMap<>();
+                        error.put("message", "密码错误");
+                        return ResponseEntity.status(401).body(error);
                     }
                 })
                 .orElseGet(() -> {
                     logger.warn("数据库未找到用户: {}", loginDTO.getUsername());
-                    return ResponseEntity.notFound().build();
+                    Map<String, String> error = new HashMap<>();
+                    error.put("message", "用户不存在");
+                    return ResponseEntity.status(404).body(error);
                 });
+    }
+    
+    // 注册接口
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterDTO registerDTO) {
+        logger.info("收到注册请求: 用户名 [{}], 角色ID [{}]", registerDTO.getUsername(), registerDTO.getRoleId());
+        
+        try {
+            LoginResponseDTO response = userService.register(registerDTO);
+            logger.info("注册成功: 用户ID [{}]", response.getUserId());
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            logger.warn("注册失败: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        } catch (Exception e) {
+            logger.error("注册异常: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "注册失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
     }
     
     // 创建用户

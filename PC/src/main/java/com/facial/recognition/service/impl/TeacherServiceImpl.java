@@ -20,19 +20,19 @@ public class TeacherServiceImpl implements TeacherService {
     public Teacher createTeacher(Teacher t) { return teacherRepository.save(t); }
 
     @Override
-    public Optional<Teacher> findByUserId(String userId) { return teacherRepository.findByUserId(userId); }
+    public Optional<Teacher> findByUserId(Integer userId) { return teacherRepository.findByUserId(userId); }
 
     @Override
     @Transactional
-    public Teacher updateTeacher(String userId, Teacher update) {
+    public Teacher updateTeacher(Integer userId, Teacher update) {
         Teacher t = teacherRepository.findByUserId(userId).orElseThrow(() -> new IllegalArgumentException("teacher not found"));
-        t.setDepartment(update.getDepartment()); t.setTitle(update.getTitle());
+        t.setDepartment(update.getDepartment()); t.setJobTitle(update.getJobTitle());
         return teacherRepository.save(t);
     }
 
     @Override
     @Transactional
-    public void deleteByUserId(String userId) { teacherRepository.findByUserId(userId).ifPresent(t -> teacherRepository.delete(t)); }
+    public void deleteByUserId(Integer userId) { teacherRepository.findByUserId(userId).ifPresent(t -> teacherRepository.delete(t)); }
 
     @Override
     public List<Teacher> listAll() { return teacherRepository.findAll(); }

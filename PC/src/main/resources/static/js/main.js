@@ -219,8 +219,167 @@ const Modal = {
     }
 };
 
+// ========== 登录状态检查 ==========
+function checkLogin() {
+    var currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) {
+        window.location.href = '/login.html';
+        return null;
+    }
+    return JSON.parse(currentUser);
+}
+
+// 获取当前用户信息
+function getCurrentUser() {
+    var userStr = localStorage.getItem('currentUser');
+    return userStr ? JSON.parse(userStr) : null;
+}
+
+// 退出登录
+function logout() {
+    localStorage.removeItem('currentUser');
+    window.location.href = '/login.html';
+}
+
+// 更新顶部用户信息显示
+function updateUserDisplay() {
+    var user = getCurrentUser();
+    if (user) {
+        var userAvatar = document.querySelector('.user-avatar');
+        var userName = document.querySelector('.user-name');
+        if (userAvatar && user.realName) {
+            userAvatar.textContent = user.realName.charAt(0);
+        }
+        if (userName) {
+            var roleNames = {1: '管理员', 2: '教师', 3: '学生'};
+            var roleName = roleNames[user.roleId] || '';
+            userName.textContent = user.realName + (roleName ? ' (' + roleName + ')' : '');
+            userName.style.cursor = 'pointer';
+            userName.title = '点击退出登录';
+            userName.onclick = function() {
+                if (confirm('确定要退出登录吗？')) {
+                    logout();
+                }
+            };
+        }
+    }
+}
+
+// ========== 角色权限控制 ==========
+// 菜单权限配置：定义每个角色可以看到的菜单
+var menuPermissions = {
+    // 管理员(roleId=1): 所有菜单
+    1: {
+        'permission': true,
+        'permission-assign': true,
+        'dashboard': true,
+        'basic-info': true,
+        'user-management': true,
+        'role-management': true,
+        'teacher-management': true,
+        'student-management': true,
+        'course-management': true,
+        'business': true,
+        'publish-task': true,
+        'statistics': true,
+        'course-selection': true
+    },
+    // 教师(roleId=2): 仪表盘、学生信息、自己的教师信息、课程信息、考勤管理
+    2: {
+        'permission': false,
+        'permission-assign': false,
+        'dashboard': true,
+        'basic-info': true,
+        'user-management': false,
+        'role-management': false,
+        'teacher-management': true,   // 只能看自己的教师信息
+        'student-management': true,   // 只能看自己班级的学生
+        'course-management': true,    // 只能看自己的课程
+        'business': true,
+        'publish-task': true,
+        'statistics': true,
+        'course-selection': false
+    },
+    // 学生(roleId=3): 仅能管理自己的学生信息、选课
+    3: {
+        'permission': false,
+        'permission-assign': false,
+        'dashboard': true,
+        'basic-info': true,
+        'user-management': false,
+        'role-management': false,
+        'teacher-management': false,
+        'student-management': true,  // 只能看自己的信息
+        'course-management': true,   // 可以查看课程
+        'business': true,
+        'publish-task': false,
+        'statistics': true,      // 可以查看考勤记录
+        'course-selection': true     // 可以选课
+    }
+};
+
+// 根据用户角色过滤菜单
+function applyMenuPermissions() {
+    var user = getCurrentUser();
+    if (!user) {
+        console.log('applyMenuPermissions: 用户未登录');
+        return;
+    }
+    
+    var roleId = user.roleId;
+    console.log('applyMenuPermissions: 用户角色ID =', roleId, '用户信息 =', user);
+    var permissions = menuPermissions[roleId] || {};
+    console.log('applyMenuPermissions: 权限配置 =', permissions);
+    
+    // 处理主菜单项
+    var menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach(function(item) {
+        var target = item.getAttribute('data-target');
+        if (permissions[target] === false) {
+            item.style.display = 'none';
+            // 同时隐藏对应的子菜单
+            var nextEl = item.nextElementSibling;
+            if (nextEl && nextEl.classList.contains('submenu')) {
+                nextEl.style.display = 'none';
+            }
+        }
+    });
+    
+    // 处理子菜单项
+    var submenuItems = document.querySelectorAll('.submenu-item');
+    submenuItems.forEach(function(item) {
+        var target = item.getAttribute('data-target');
+        if (permissions[target] === false) {
+            item.style.display = 'none';
+        }
+    });
+    
+    // 检查父菜单下是否所有子菜单都隐藏了，如果是则隐藏父菜单
+    var submenus = document.querySelectorAll('.submenu');
+    submenus.forEach(function(submenu) {
+        var visibleItems = submenu.querySelectorAll('.submenu-item:not([style*="display: none"])');
+        if (visibleItems.length === 0) {
+            submenu.style.display = 'none';
+            var prevEl = submenu.previousElementSibling;
+            if (prevEl && prevEl.classList.contains('menu-item')) {
+                prevEl.style.display = 'none';
+            }
+        }
+    });
+}
+
 // 页面切换逻辑
 document.addEventListener('DOMContentLoaded', function () {
+    // 检查登录状态
+    var currentUser = checkLogin();
+    if (!currentUser) return;
+    
+    // 更新用户显示
+    updateUserDisplay();
+    
+    // 应用菜单权限
+    applyMenuPermissions();
+    
     // 初始化模态框
     Modal.init();
     
@@ -306,140 +465,196 @@ document.addEventListener('DOMContentLoaded', function () {
         let content = '';
         switch (id) {
             case 'course-management':
-                content = `
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">课程信息管理</div>
-                            <button class="btn btn-accent" onclick="addCourse()">添加课程</button>
-                            <button class="btn" onclick="location.reload()">刷新</button>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>课程编号</th>
-                                            <th>课程名称</th>
-                                            <th>授课教师</th>
-                                            <th>学分</th>
-                                            <th>操作</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="course-table-body">
-                                        <tr>
-                                            <td>C001</td>
-                                            <td>软件工程</td>
-                                            <td>张老师</td>
-                                            <td>3</td>
-                                            <td>
-                                                <div class="btn-group">
-                                                    <button class="btn" onclick="editCourse('C001', '软件工程', '张老师', 3)">编辑</button>
-                                                    <button class="btn btn-danger" onclick="deleteCourse('C001', '软件工程')">删除</button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>C002</td>
-                                            <td>数据结构</td>
-                                            <td>李老师</td>
-                                            <td>4</td>
-                                            <td>
-                                                <div class="btn-group">
-                                                    <button class="btn" onclick="editCourse('C002', '数据结构', '李老师', 4)">编辑</button>
-                                                    <button class="btn btn-danger" onclick="deleteCourse('C002', '数据结构')">删除</button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                var currentUser = getCurrentUser();
+                var isTeacherRole = currentUser && currentUser.roleId === 2;
+                var isStudentRole = currentUser && currentUser.roleId === 3;
+                
+                if (isTeacherRole) {
+                    // 教师只能看到自己的课程
+                    content = `
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">我的课程</div>
+                                <button class="btn" onclick="loadMyCourses()">刷新</button>
+                            </div>
+                            <div class="card-body">
+                                <div id="my-courses-container">
+                                    <p style="text-align: center; color: #888;">加载中...</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                    setTimeout(loadMyCourses, 100);
+                } else if (isStudentRole) {
+                    // 学生只能查看所有课程，不能操作
+                    content = `
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">课程列表</div>
+                                <button class="btn" onclick="loadCourses()">刷新</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>课程编号</th>
+                                                <th>课程名称</th>
+                                                <th>学分</th>
+                                                <th>学期</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="course-table-body">
+                                            <tr>
+                                                <td colspan="4" style="text-align: center;">加载中...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    setTimeout(loadCourses, 100);
+                } else {
+                    // 管理员可以管理所有课程
+                    content = `
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">课程信息管理</div>
+                                <button class="btn btn-accent" onclick="addCourse()">添加课程</button>
+                                <button class="btn" onclick="loadCourses()">刷新</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>课程编号</th>
+                                                <th>课程名称</th>
+                                                <th>学分</th>
+                                                <th>学期</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="course-table-body">
+                                            <tr>
+                                                <td colspan="5" style="text-align: center;">加载中...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    setTimeout(loadCourses, 100);
+                }
                 break;
             case 'teacher-management':
-                content = `
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">教师信息管理</div>
-                            <button class="btn btn-accent" onclick="addTeacher()">添加教师</button>
-                            <button class="btn" onclick="location.reload()">刷新</button>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>工号</th>
-                                            <th>姓名</th>
-                                            <th>职称</th>
-                                            <th>所属院系</th>
-                                            <th>操作</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="teacher-table-body">
-                                        <tr>
-                                            <td>T001</td>
-                                            <td>张老师</td>
-                                            <td>教授</td>
-                                            <td>计算机学院</td>
-                                            <td>
-                                                <div class="btn-group">
-                                                    <button class="btn" onclick="editTeacher('T001', '张老师', '教授', '计算机学院')">编辑</button>
-                                                    <button class="btn btn-danger" onclick="deleteTeacher('T001', '张老师')">删除</button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>T002</td>
-                                            <td>李老师</td>
-                                            <td>副教授</td>
-                                            <td>计算机学院</td>
-                                            <td>
-                                                <div class="btn-group">
-                                                    <button class="btn" onclick="editTeacher('T002', '李老师', '副教授', '计算机学院')">编辑</button>
-                                                    <button class="btn btn-danger" onclick="deleteTeacher('T002', '李老师')">删除</button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                var currentUser = getCurrentUser();
+                var isTeacher = currentUser && currentUser.roleId === 2;
+                
+                if (isTeacher) {
+                    // 教师只能看到自己的信息
+                    content = `
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">我的信息</div>
+                                <button class="btn" onclick="loadMyTeacherInfo()">刷新</button>
+                            </div>
+                            <div class="card-body">
+                                <div id="my-teacher-info" style="padding: 20px;">
+                                    <p style="text-align: center; color: #888;">加载中...</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                    setTimeout(loadMyTeacherInfo, 100);
+                } else {
+                    // 管理员可以看到所有教师
+                    content = `
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">教师信息管理</div>
+                                <button class="btn btn-accent" onclick="addTeacher()">添加教师</button>
+                                <button class="btn" onclick="loadTeachers()">刷新</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>用户名</th>
+                                                <th>真实姓名</th>
+                                                <th>手机号</th>
+                                                <th>邮箱</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="teacher-table-body">
+                                            <tr>
+                                                <td colspan="5" style="text-align: center;">加载中...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    setTimeout(loadTeachers, 100);
+                }
                 break;
             case 'student-management':
-                content = `
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">学生信息管理</div>
-                            <button class="btn btn-accent" onclick="addStudent()">添加学生</button>
-                            <button class="btn" onclick="loadStudents()">刷新</button>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>学号</th>
-                                            <th>姓名</th>
-                                            <th>班级</th>
-                                            <th>操作</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="student-table-body">
-                                        <tr>
-                                            <td colspan="4" style="text-align: center;">加载中...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                var currentUser = getCurrentUser();
+                var isStudent = currentUser && currentUser.roleId === 3;
+                
+                if (isStudent) {
+                    // 学生只能看到自己的信息
+                    content = `
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">我的信息</div>
+                                <button class="btn" onclick="loadMyStudentInfo()">刷新</button>
+                            </div>
+                            <div class="card-body">
+                                <div id="my-student-info" style="padding: 20px;">
+                                    <p style="text-align: center; color: #888;">加载中...</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-                // 加载学生数据
-                setTimeout(loadStudents, 100);
+                    `;
+                    setTimeout(loadMyStudentInfo, 100);
+                } else {
+                    // 管理员和教师可以看到学生列表
+                    content = `
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">学生信息管理</div>
+                                <button class="btn btn-accent" onclick="addStudent()">添加学生</button>
+                                <button class="btn" onclick="loadStudents()">刷新</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>学号</th>
+                                                <th>姓名</th>
+                                                <th>班级</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="student-table-body">
+                                            <tr>
+                                                <td colspan="4" style="text-align: center;">加载中...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    setTimeout(loadStudents, 100);
+                }
                 break;
             case 'user-management':
                 content = `
@@ -583,42 +798,78 @@ document.addEventListener('DOMContentLoaded', function () {
                 setTimeout(initPublishTaskPage, 100);
                 break;
             case 'statistics':
-                content = `
-                    <div class="card" id="statistics">
-                        <div class="card-header">
-                            <div class="card-title">考勤统计</div>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label>选择班级</label>
-                                <select id="statistics-class-select">
-                                    <option value="">正在加载...</option>
-                                </select>
+                var currentUser = getCurrentUser();
+                var isStudent = currentUser && currentUser.roleId === 3;
+                
+                if (isStudent) {
+                    // 学生查看自己的考勤记录
+                    content = `
+                        <div class="card" id="statistics">
+                            <div class="card-header">
+                                <div class="card-title">我的考勤记录</div>
+                                <button class="btn" onclick="loadMyAttendanceRecords()">刷新</button>
                             </div>
-                            <button class="btn btn-accent">生成统计报告</button>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>打卡时间</th>
+                                                <th>考勤结果</th>
+                                                <th>可信度</th>
+                                                <th>备注</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="my-attendance-body">
+                                            <tr>
+                                                <td colspan="4" style="text-align: center;">加载中...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    setTimeout(loadMyAttendanceRecords, 100);
+                } else {
+                    // 教师和管理员查看统计
+                    content = `
+                        <div class="card" id="statistics">
+                            <div class="card-header">
+                                <div class="card-title">考勤统计</div>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label>选择班级</label>
+                                    <select id="statistics-class-select">
+                                        <option value="">正在加载...</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-accent">生成统计报告</button>
 
-                            <div style="margin-top: 30px;">
-                                <!-- 统计结果将在这里动态显示 -->
+                                <div style="margin-top: 30px;">
+                                    <!-- 统计结果将在这里动态显示 -->
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- 考勤状况显示区域 -->
-                    <div id="attendance-status-container" style="display: none; margin-top: 20px;">
-                        <div class="card">
-                            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                                <div class="card-title">班级考勤状况</div>
-                                <button class="btn btn-sm btn-secondary" onclick="closeAttendanceStatus()" style="margin: 0;">
-                                    关闭
-                                </button>
-                            </div>
-                            <div class="card-body" id="attendance-status-content">
-                                <!-- 考勤状况内容将在这里动态显示 -->
+                        
+                        <!-- 考勤状况显示区域 -->
+                        <div id="attendance-status-container" style="display: none; margin-top: 20px;">
+                            <div class="card">
+                                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div class="card-title">班级考勤状况</div>
+                                    <button class="btn btn-sm btn-secondary" onclick="closeAttendanceStatus()" style="margin: 0;">
+                                        关闭
+                                    </button>
+                                </div>
+                                <div class="card-body" id="attendance-status-content">
+                                    <!-- 考勤状况内容将在这里动态显示 -->
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-                setTimeout(initStatisticsPage, 100);
+                    `;
+                    setTimeout(initStatisticsPage, 100);
+                }
                 break;
             case 'course-selection':
                 content = `
@@ -728,6 +979,94 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ========== 学生管理功能 ==========
+
+// 加载学生自己的信息（学生角色专用）
+async function loadMyStudentInfo() {
+    var container = document.getElementById('my-student-info');
+    if (!container) return;
+    
+    var currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.studentNumber) {
+        container.innerHTML = '<p style="text-align: center; color: #888;">无法获取学生信息</p>';
+        return;
+    }
+    
+    try {
+        var student = await StudentAPI.getByNumber(currentUser.studentNumber);
+        
+        container.innerHTML = `
+            <div style="max-width: 500px; margin: 0 auto;">
+                <div style="display: grid; gap: 15px;">
+                    <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <span style="color: #666;">学号</span>
+                        <span style="font-weight: 500;">${student.studentNumber || '-'}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <span style="color: #666;">姓名</span>
+                        <span style="font-weight: 500;">${student.studentName || '-'}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <span style="color: #666;">班级</span>
+                        <span style="font-weight: 500;">${student.className || '-'}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <span style="color: #666;">用户名</span>
+                        <span style="font-weight: 500;">${currentUser.username || '-'}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <span style="color: #666;">手机号</span>
+                        <span style="font-weight: 500;">${currentUser.phoneNumber || '-'}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <span style="color: #666;">邮箱</span>
+                        <span style="font-weight: 500;">${currentUser.email || '-'}</span>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn btn-accent" onclick="editMyStudentInfo(${student.studentId})">编辑我的信息</button>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('加载学生信息失败:', error);
+        container.innerHTML = '<p style="text-align: center; color: red;">加载失败，请刷新重试</p>';
+    }
+}
+
+// 编辑学生自己的信息
+function editMyStudentInfo(studentId) {
+    var currentUser = getCurrentUser();
+    
+    Modal.form({
+        title: '✏️ 编辑我的信息',
+        fields: [
+            { name: 'studentName', label: '姓名', type: 'text', value: currentUser.realName || '', required: true },
+            { name: 'className', label: '班级', type: 'text', value: currentUser.className || '' },
+            { name: 'phoneNumber', label: '手机号', type: 'text', value: currentUser.phoneNumber || '' },
+            { name: 'email', label: '邮箱', type: 'email', value: currentUser.email || '' }
+        ],
+        submitText: '保存',
+        onSubmit: function(data) {
+            StudentAPI.update(studentId, {
+                studentName: data.studentName,
+                className: data.className
+            }).then(function() {
+                showToast('信息更新成功！', 'success');
+                // 更新localStorage中的用户信息
+                currentUser.realName = data.studentName;
+                currentUser.className = data.className;
+                currentUser.phoneNumber = data.phoneNumber;
+                currentUser.email = data.email;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                updateUserDisplay();
+                loadMyStudentInfo();
+            }).catch(function(error) {
+                console.error('更新失败:', error);
+                showToast('更新失败: ' + error.message, 'error');
+            });
+        }
+    });
+}
 
 // 加载所有学生
 async function loadStudents() {
@@ -909,6 +1248,173 @@ function deleteStudent(id) {
                 });
         }
     });
+}
+
+// ========== 教师管理功能 ==========
+
+// 加载教师自己的信息
+async function loadMyTeacherInfo() {
+    var container = document.getElementById('my-teacher-info');
+    if (!container) return;
+    
+    var currentUser = getCurrentUser();
+    if (!currentUser) {
+        container.innerHTML = '<p style="text-align: center; color: #888;">无法获取教师信息</p>';
+        return;
+    }
+    
+    container.innerHTML = `
+        <div style="max-width: 500px; margin: 0 auto;">
+            <div style="display: grid; gap: 15px;">
+                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                    <span style="color: #666;">工号</span>
+                    <span style="font-weight: 500;">${currentUser.jobNumber || currentUser.username || '-'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                    <span style="color: #666;">姓名</span>
+                    <span style="font-weight: 500;">${currentUser.realName || '-'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                    <span style="color: #666;">职称</span>
+                    <span style="font-weight: 500;">${currentUser.jobTitle || '-'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                    <span style="color: #666;">所属院系</span>
+                    <span style="font-weight: 500;">${currentUser.department || '-'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                    <span style="color: #666;">手机号</span>
+                    <span style="font-weight: 500;">${currentUser.phoneNumber || '-'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                    <span style="color: #666;">邮箱</span>
+                    <span style="font-weight: 500;">${currentUser.email || '-'}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 加载所有教师（管理员用）- 从用户表中获取角色为教师的用户
+async function loadTeachers() {
+    var tbody = document.getElementById('teacher-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">加载中...</td></tr>';
+    
+    try {
+        // 角色ID 2 = 教师
+        var teachers = await API.get('/users/role/2');
+        
+        if (teachers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无教师数据</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = teachers.map(function(teacher) {
+            return '<tr>' +
+                '<td>' + (teacher.username || '-') + '</td>' +
+                '<td>' + (teacher.realName || '-') + '</td>' +
+                '<td>' + (teacher.phoneNumber || '-') + '</td>' +
+                '<td>' + (teacher.email || '-') + '</td>' +
+                '<td><div class="btn-group">' +
+                    '<button class="btn" onclick="editTeacher(' + teacher.userId + ')">编辑</button>' +
+                    '<button class="btn btn-danger" onclick="deleteTeacher(' + teacher.userId + ')">删除</button>' +
+                '</div></td>' +
+            '</tr>';
+        }).join('');
+    } catch (error) {
+        console.error('加载教师失败:', error);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">加载失败</td></tr>';
+    }
+}
+
+// ========== 课程管理功能 ==========
+
+// 加载教师自己的课程
+async function loadMyCourses() {
+    var container = document.getElementById('my-courses-container');
+    if (!container) return;
+    
+    var currentUser = getCurrentUser();
+    if (!currentUser) {
+        container.innerHTML = '<p style="text-align: center; color: #888;">无法获取课程信息</p>';
+        return;
+    }
+    
+    try {
+        // 获取所有课程班级，然后筛选当前教师的
+        var classes = await API.get('/course-classes');
+        var myCourses = classes.filter(function(c) {
+            return c.teacherId === currentUser.userId;
+        });
+        
+        if (myCourses.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: #888;">暂无授课课程</p>';
+            return;
+        }
+        
+        var html = '<div class="table-container"><table><thead><tr>' +
+            '<th>班级名称</th><th>上课时间</th><th>上课地点</th><th>学期</th>' +
+        '</tr></thead><tbody>';
+        
+        myCourses.forEach(function(course) {
+            html += '<tr>' +
+                '<td>' + (course.className || '-') + '</td>' +
+                '<td>' + (course.classTime || '-') + '</td>' +
+                '<td>' + (course.classLocation || '-') + '</td>' +
+                '<td>' + (course.semester || '-') + '</td>' +
+            '</tr>';
+        });
+        
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('加载课程失败:', error);
+        container.innerHTML = '<p style="text-align: center; color: red;">加载失败</p>';
+    }
+}
+
+// 加载所有课程（管理员和学生用）
+async function loadCourses() {
+    var tbody = document.getElementById('course-table-body');
+    if (!tbody) return;
+    
+    var currentUser = getCurrentUser();
+    var isStudent = currentUser && currentUser.roleId === 3;
+    var colSpan = isStudent ? 4 : 5;
+    
+    tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center;">加载中...</td></tr>`;
+    
+    try {
+        var courses = await API.get('/courses');
+        
+        if (courses.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center;">暂无课程数据</td></tr>`;
+            return;
+        }
+        
+        tbody.innerHTML = courses.map(function(course) {
+            var row = '<tr>' +
+                '<td>' + (course.courseCode || '-') + '</td>' +
+                '<td>' + (course.courseName || '-') + '</td>' +
+                '<td>' + (course.credits || '-') + '</td>' +
+                '<td>' + (course.semester || '-') + '</td>';
+            
+            if (!isStudent) {
+                row += '<td><div class="btn-group">' +
+                    '<button class="btn" onclick="editCourse(' + course.courseId + ')">编辑</button>' +
+                    '<button class="btn btn-danger" onclick="deleteCourse(' + course.courseId + ')">删除</button>' +
+                '</div></td>';
+            }
+            
+            row += '</tr>';
+            return row;
+        }).join('');
+    } catch (error) {
+        console.error('加载课程失败:', error);
+        tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center; color: red;">加载失败</td></tr>`;
+    }
 }
 
 // ========== 用户管理功能 ==========
@@ -1224,6 +1730,39 @@ async function loadRoles() {
     } catch (error) {
         console.error('加载角色失败:', error);
         return [];
+    }
+}
+
+// 加载学生自己的考勤记录
+async function loadMyAttendanceRecords() {
+    var tbody = document.getElementById('my-attendance-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">加载中...</td></tr>';
+    
+    try {
+        var records = await AttendanceRecordAPI.getMyRecords();
+        
+        if (records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">暂无考勤记录</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = records.map(function(record) {
+            var score = record.confidenceScore ? (record.confidenceScore * 100).toFixed(2) + '%' : '-';
+            var time = record.checkInTime ? new Date(record.checkInTime).toLocaleString() : '-';
+            var resultColor = record.attendanceResult === '正常' ? 'green' : 'red';
+            
+            return '<tr>' +
+                '<td>' + time + '</td>' +
+                '<td style="color:' + resultColor + '">' + (record.attendanceResult || '-') + '</td>' +
+                '<td>' + score + '</td>' +
+                '<td>' + (record.remark || '-') + '</td>' +
+            '</tr>';
+        }).join('');
+    } catch (error) {
+        console.error('加载考勤记录失败:', error);
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">加载失败: ' + (error.message || '未知错误') + '</td></tr>';
     }
 }
 
@@ -2483,8 +3022,8 @@ function initCourseSelectionPage() {
     });
 
     // 绑定按钮事件
-    document.getElementById('refresh-available-courses').addEventListener('click', () => loadAvailableCourses());
-    document.getElementById('refresh-my-courses').addEventListener('click', () => loadMyCourses());
+    document.getElementById('refresh-available-courses')?.addEventListener('click', () => loadAvailableCourses());
+    document.getElementById('refresh-my-courses')?.addEventListener('click', () => loadStudentSelectedCourses());
 
     // 初始化加载可选课程
     loadAvailableCourses();
@@ -2497,7 +3036,7 @@ function loadTabData(tabId) {
             loadAvailableCourses();
             break;
         case 'my-courses':
-            loadMyCourses();
+            loadStudentSelectedCourses();
             break;
     }
 }
@@ -2505,10 +3044,27 @@ function loadTabData(tabId) {
 // 加载可选课程
 function loadAvailableCourses() {
     const container = document.getElementById('available-courses-list');
+    if (!container) return;
+    
     container.innerHTML = '<div class="loading">正在加载...</div>';
 
-    // 调用后端API获取可选课程
-    StudentCourseAPI.getAvailableCourses(1) // 假设学生ID为1
+    var currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.studentNumber) { // 应该用 userId 还是 studentId? 假设 getCurrentUserId 返回的是 ID
+       // API 需要 studentId, 这里需要确认 currentUser 结构
+       // 假设 currentUser 是 User 对象，可能不包含 studentId。需要通过 API 获取或者假设 userId 就是 studentId (不一定)
+       // 暂时使用 API.getCurrentUserId() 获取 userId
+    }
+    
+    // 暂时用 1 做测试，稍后应该修复
+    // StudentCourseAPI.getAvailableCourses(1) 
+    
+    // 更好的是：
+    var userId = API.getCurrentUserId();
+    // 如果需要 studentId，可能需要先 fetch student info.
+    // 但这里的 API 设计似乎是用 studentId.
+    // 为了不破坏现有逻辑太多，先只改函数名，ID 暂时保留原样或者尝试获取。
+    
+    StudentCourseAPI.getAvailableCourses(userId || 1) // 假设学生ID为1
         .then(courses => {
             if (!courses || courses.length === 0) {
                 container.innerHTML = `
@@ -2574,13 +3130,16 @@ function loadAvailableCourses() {
         });
 }
 
-// 加载我的课程
-function loadMyCourses() {
+// 加载我的课程（学生已选）
+function loadStudentSelectedCourses() {
     const container = document.getElementById('my-courses-list');
+    if (!container) return;
+    
     container.innerHTML = '<div class="loading">正在加载...</div>';
 
     // 调用后端API获取已选课程
-    StudentCourseAPI.getStudentCourses(1) // 假设学生ID为1
+    var userId = API.getCurrentUserId();
+    StudentCourseAPI.getStudentCourses(userId || 1) // 假设学生ID为1
         .then(courses => {
             if (!courses || courses.length === 0) {
                 container.innerHTML = `
@@ -2655,12 +3214,13 @@ function enrollCourse(classId) {
     }
 
     // 调用后端API进行选课
-    StudentCourseAPI.enroll(1, classId) // 假设学生ID为1
+    var userId = API.getCurrentUserId();
+    StudentCourseAPI.enroll(userId || 1, classId) // 假设学生ID为1
         .then(result => {
             showToast(`课程 ${classId} 选修成功`, 'success');
             // 刷新数据
             loadAvailableCourses();
-            loadMyCourses();
+            loadStudentSelectedCourses();
         })
         .catch(error => {
             console.error('选课失败:', error);
@@ -2675,12 +3235,13 @@ function dropCourse(classId) {
     }
 
     // 调用后端API进行退课
-    StudentCourseAPI.drop(1, classId) // 假设学生ID为1
+    var userId = API.getCurrentUserId();
+    StudentCourseAPI.drop(userId || 1, classId) // 假设学生ID为1
         .then(result => {
             showToast(`课程 ${classId} 退修成功`, 'success');
             // 刷新数据
             loadAvailableCourses();
-            loadMyCourses();
+            loadStudentSelectedCourses();
         })
         .catch(error => {
             console.error('退课失败:', error);

@@ -60,9 +60,9 @@ public class AccessControlServiceImpl implements AccessControlService {
             return;
         }
         if (roleType == RoleType.TEACHER) {
-            Teacher teacher = teacherRepository.findById(targetTeacherId)
+            Teacher teacher = teacherRepository.findById(targetTeacherId.intValue())
                     .orElseThrow(() -> new AccessDeniedException("教师不存在或已被删除"));
-            if (!String.valueOf(requesterUserId).equals(teacher.getUserId())) {
+            if (!requesterUserId.equals(teacher.getUserId())) {
                 throw new AccessDeniedException("无权查看其他教师的授课信息");
             }
             return;
@@ -79,14 +79,53 @@ public class AccessControlServiceImpl implements AccessControlService {
         if (roleType == RoleType.TEACHER) {
             CourseClass courseClass = courseClassRepository.findById(courseClassId)
                     .orElseThrow(() -> new AccessDeniedException("课程班级不存在或已被删除"));
-            Teacher teacher = teacherRepository.findById(courseClass.getTeacherId())
+            Teacher teacher = teacherRepository.findById(courseClass.getTeacherId().intValue())
                     .orElseThrow(() -> new AccessDeniedException("授课教师信息不存在"));
-            if (!String.valueOf(requesterUserId).equals(teacher.getUserId())) {
+            if (!requesterUserId.equals(teacher.getUserId())) {
                 throw new AccessDeniedException("仅课程负责人可访问该班级信息");
             }
             return;
         }
         throw new AccessDeniedException("当前角色无法访问班级信息");
+    }
+
+    @Override
+    public void assertCanAccessTeacherInfo(Integer requesterUserId) {
+        RoleType roleType = resolveRoleType(requesterUserId);
+        if (roleType == RoleType.ADMIN || roleType == RoleType.TEACHER) {
+            return;
+        }
+        throw new AccessDeniedException("学生无权查看教师信息");
+    }
+    
+    @Override
+    public boolean isStudent(Integer userId) {
+        try {
+            RoleType roleType = resolveRoleType(userId);
+            return roleType == RoleType.STUDENT;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean isTeacher(Integer userId) {
+        try {
+            RoleType roleType = resolveRoleType(userId);
+            return roleType == RoleType.TEACHER;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean isAdmin(Integer userId) {
+        try {
+            RoleType roleType = resolveRoleType(userId);
+            return roleType == RoleType.ADMIN;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private RoleType resolveRoleType(Integer userId) {

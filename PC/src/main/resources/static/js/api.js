@@ -3,13 +3,33 @@ const API_BASE_URL = 'http://localhost:8080/api';
 
 // API工具类
 class API {
+    // 获取当前登录用户ID
+    static getCurrentUserId() {
+        const userStr = localStorage.getItem('currentUser');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                return user.userId || null;
+            } catch (e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
     // 通用请求方法
     static async request(url, options = {}) {
+        const userId = this.getCurrentUserId();
         const defaultOptions = {
             headers: {
                 'Content-Type': 'application/json',
             },
         };
+
+        // 添加用户身份信息到请求头
+        if (userId) {
+            defaultOptions.headers['X-User-Id'] = userId.toString();
+        }
 
         const config = { ...defaultOptions, ...options };
 
@@ -184,6 +204,34 @@ class UserAPI {
     }
 }
 
+// 课程API
+class CourseAPI {
+    // 获取所有课程
+    static getAll() {
+        return API.get('/courses');
+    }
+
+    // 根据ID获取课程
+    static getById(id) {
+        return API.get(`/courses/${id}`);
+    }
+
+    // 创建课程
+    static create(course) {
+        return API.post('/courses', course);
+    }
+
+    // 更新课程
+    static update(id, course) {
+        return API.put(`/courses/${id}`, course);
+    }
+
+    // 删除课程
+    static delete(id) {
+        return API.delete(`/courses/${id}`);
+    }
+}
+
 // 课程班级API
 class CourseClassAPI {
     // 获取所有课程班级
@@ -257,6 +305,14 @@ class AttendanceTaskAPI {
     // 获取班级考勤状况（某个考勤任务对应的所有学生考勤状态）
     static getClassAttendanceStatus(taskId) {
         return API.get(`/attendance-tasks/${taskId}/attendance-status`);
+    }
+}
+
+// 考勤记录API
+class AttendanceRecordAPI {
+    // 获取当前登录学生的考勤记录
+    static getMyRecords() {
+        return API.get('/attendance-records/my');
     }
 }
 
