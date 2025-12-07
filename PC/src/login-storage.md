@@ -14,6 +14,7 @@ localStorage.setItem('currentUser', JSON.stringify(data));
 - **键名**：`"currentUser"`
 - **值结构（主要字段）**：
   - `userId`：用户ID
+  - `studentId`：学生ID（仅学生有，用于选课/考勤接口的 studentId）
   - `username`：用户名
   - `realName`：真实姓名
   - `phoneNumber`：手机号
@@ -26,6 +27,16 @@ localStorage.setItem('currentUser', JSON.stringify(data));
   - `className`：班级（学生）
   - `department`：所属院系（教师）
   - `jobTitle`：职称（教师）
+
+### 关于 `X-User-Id` 请求头
+- 前端所有需要身份校验的 API 请求，会从 `currentUser.userId` 取值，放入请求头 `X-User-Id`。
+- 代码位置：`static/js/api.js` 的 `API.request` 会自动附加：
+  ```js
+  if (userId) {
+      defaultOptions.headers['X-User-Id'] = userId.toString();
+  }
+  ```
+- 后端用该请求头识别当前用户并做权限校验（如访问学生/教师/班级信息、选课、考勤等接口）。
 
 > 注：前端通过 `getCurrentUser()` 读取该对象，并根据 `roleId` 和其他字段做权限控制、界面展示。
 
