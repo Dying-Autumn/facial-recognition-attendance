@@ -65,3 +65,9 @@ logging:
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n'
 
+facemind:
+  face-service-url: http://127.0.0.1:8000/embed
+
+server:
+  max-http-request-header-size: 65536
+

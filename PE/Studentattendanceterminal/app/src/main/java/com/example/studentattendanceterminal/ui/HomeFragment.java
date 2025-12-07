@@ -14,7 +14,6 @@ import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -63,7 +62,6 @@ public class HomeFragment extends Fragment {
     private RecyclerView rvRecords;
     private MaterialButton btnStartCheckin;
     private TextView tvLocation;
-    private ImageView ivPreview;
     private Spinner spinnerCourse;
     private RecordsAdapter adapter;
     private static final int REQ_CODE_CHECKIN = 1001;
@@ -105,7 +103,6 @@ public class HomeFragment extends Fragment {
         rvRecords = view.findViewById(R.id.rv_records);
         btnStartCheckin = view.findViewById(R.id.btn_start_checkin);
         tvLocation = view.findViewById(R.id.tv_location);
-        ivPreview = view.findViewById(R.id.iv_preview);
         spinnerCourse = view.findViewById(R.id.spinner_course);
 
         rvRecords.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -136,6 +133,26 @@ public class HomeFragment extends Fragment {
                         .replace(R.id.fragment_container, new MeFragment())
                         .commit();
                 return;
+            }
+
+            // 校验已选择有效课程（过滤“暂无需要签到的课程”等占位项）
+            Object selected = spinnerCourse.getSelectedItem();
+            if (selected == null) {
+                showToast("请选择课程后再签到");
+                return;
+            }
+            if (selected instanceof String) {
+                String s = (String) selected;
+                if (s.contains("暂无") || s.contains("请先登录")) {
+                    showToast("暂无可签到课程");
+                    return;
+                }
+            } else if (selected instanceof AttendanceDbHelper.Course) {
+                AttendanceDbHelper.Course sc = (AttendanceDbHelper.Course) selected;
+                if (sc.name == null || sc.name.trim().isEmpty()) {
+                    showToast("请选择课程后再签到");
+                    return;
+                }
             }
 
             if (hasAllPermissions()) {
@@ -439,9 +456,6 @@ public class HomeFragment extends Fragment {
             return;
         }
         Bitmap bitmap = (Bitmap) extra;
-        if (ivPreview != null) {
-            ivPreview.setImageBitmap(bitmap);
-        }
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 90, bos);
         byte[] imageBytes = bos.toByteArray();
@@ -452,7 +466,7 @@ public class HomeFragment extends Fragment {
         long ts = System.currentTimeMillis();
         double lat = currentLat;
         double lon = currentLon;
-        boolean success = isWithinChinaBounds(lat, lon);
+        boolean geoValid = isWithinChinaBounds(lat, lon);
 
         // 读取选中的课程与已登录学生
         AttendanceDbHelper.Course selectedCourse = (AttendanceDbHelper.Course) spinnerCourse.getSelectedItem();
@@ -470,6 +484,10 @@ public class HomeFragment extends Fragment {
         // 检查该课程是否有活跃的考勤任务
         Long classId = getClassIdByCourseName(selectedCourse.name);
         if (classId == null) {
+            // 记录详细信息方便排查
+            LogUtil.e(TAG, "无法找到课程班级映射: courseName=" + selectedCourse.name
+                    + ", mapKeys=" + courseNameToClassIdMap.keySet()
+                    + ", tasks=" + courseTaskMap.keySet());
             showToast("无法找到该课程的班级信息");
             return;
         }
@@ -483,47 +501,155 @@ public class HomeFragment extends Fragment {
         Long courseId = selectedCourse.id;
         final Long taskId = task.getTaskId(); // 保存taskId以便在异步线程中使用
 
-        new Thread(() -> {
-            Context ctx = appContext != null ? appContext : requireContext();
-            long rowId = AttendanceDbHelper.getInstance(ctx)
-                    .insertCheckinWithCourse(ts, lat, lon, imageBytes, courseId, studentId, success);
-            requireActivity().runOnUiThread(() -> {
-                if (rowId > 0) {
-                    showToast(success ? "本地保存成功，正在上传..." : "签到失败：位置不在范围内");
-                    reloadRecords();
-                    
-                    // 如果本地保存成功且签到判定为有效，尝试上传服务器
-                    if (success) {
-                        uploadAttendanceRecord(studentId, courseId, taskId, lat, lon, base64Image, ts);
-                    }
-                } else {
-                    showToast("保存失败");
-                }
-            });
-        }).start();
+        validateAndUpload(task, studentId, courseId, taskId, lat, lon, ts, base64Image, imageBytes, geoValid);
     }
     
-    private void uploadAttendanceRecord(Long studentId, Long courseId, Long taskId, double lat, double lon, String base64Image, long ts) {
-        com.example.studentattendanceterminal.models.AttendanceDTO record = 
+    private void uploadAttendanceRecord(Long userId, Long studentId, Long courseId, Long taskId, double lat, double lon, String base64Image, long ts,
+                                        java.util.function.Consumer<Boolean> onDone) {
+        com.example.studentattendanceterminal.models.AttendanceDTO record =
             new com.example.studentattendanceterminal.models.AttendanceDTO(studentId, courseId, taskId, lat, lon, base64Image, ts, "正常");
-            
+
         com.example.studentattendanceterminal.network.ApiClient.getStudentService()
-            .uploadAttendance(record)
+            .uploadAttendance(userId, record)
             .enqueue(new retrofit2.Callback<okhttp3.ResponseBody>() {
                 @Override
                 public void onResponse(retrofit2.Call<okhttp3.ResponseBody> call, retrofit2.Response<okhttp3.ResponseBody> response) {
-                    if (response.isSuccessful()) {
+                    boolean ok = response.isSuccessful();
+                    if (ok) {
                         showToast("✅ 同步到服务器成功");
                     } else {
+                        LogUtil.e(TAG, "上传考勤失败: code=" + response.code());
                         showToast("❌ 上传失败: " + response.code());
                     }
+                    if (onDone != null) onDone.accept(ok);
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<okhttp3.ResponseBody> call, Throwable t) {
+                    LogUtil.e(TAG, "上传考勤网络异常: " + t.getMessage());
                     showToast("❌ 网络错误，数据已保存本地");
+                    if (onDone != null) onDone.accept(false);
                 }
             });
+    }
+
+    /**
+     * 校验（时间+半径+人脸识别）后再上传
+     */
+    private void validateAndUpload(com.example.studentattendanceterminal.models.AttendanceTask task,
+                                   Long studentId,
+                                   Long courseId,
+                                   Long taskId,
+                                   double lat,
+                                   double lon,
+                                   long ts,
+                                   String base64Image,
+                                   byte[] imageBytes,
+                                   boolean geoValid) {
+        // 1. 时间是否在有效期内
+        boolean timeOk = task != null && task.isActive() && !"EXPIRED".equalsIgnoreCase(task.getStatus());
+        if (!timeOk) {
+            saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, false);
+            showToast("签到失败：考勤已过期或未开始");
+            return;
+        }
+
+        // 2. 距离是否在半径内
+        boolean rangeOk = geoValid && isWithinTaskRadius(lat, lon, task.getLatitude(), task.getLongitude(), task.getRadius());
+        if (!rangeOk) {
+            saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, false);
+            showToast("签到失败：未在考勤范围内");
+            return;
+        }
+
+        // 3. 调用后端人脸识别
+        com.example.studentattendanceterminal.models.FaceRecognitionRequest req =
+                new com.example.studentattendanceterminal.models.FaceRecognitionRequest(base64Image);
+
+        com.example.studentattendanceterminal.network.ApiClient.getStudentService()
+                .recognizeFace(req)
+                .enqueue(new retrofit2.Callback<com.example.studentattendanceterminal.models.FaceRecognitionResult>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.studentattendanceterminal.models.FaceRecognitionResult> call,
+                                           retrofit2.Response<com.example.studentattendanceterminal.models.FaceRecognitionResult> response) {
+                        boolean matched = false;
+                        String msg = "";
+                        com.example.studentattendanceterminal.models.FaceRecognitionResult body = null;
+                        if (response.isSuccessful() && response.body() != null) {
+                            body = response.body();
+                            matched = body.isHasFace() && body.isMatched();
+                            msg = body.getMessage() == null ? "" : body.getMessage();
+                        } else {
+                            msg = "识别接口错误：" + response.code();
+                            LogUtil.e(TAG, "人脸识别接口失败: code=" + response.code());
+                        }
+
+                        if (matched) {
+                            Long loginUserId = getLoggedInUserId();
+                            Integer faceUserId = body != null ? body.getUserId() : null;
+                            if (faceUserId != null && loginUserId != null && !faceUserId.equals(loginUserId.intValue())) {
+                                // 人脸匹配到其他用户，拒绝
+                                saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, false);
+                                showToast("签到失败：人脸与登录账号不一致");
+                                reloadRecords();
+                                return;
+                            }
+                            // 先提示上传中
+                            showToast("人脸匹配成功，正在上传...");
+                            uploadAttendanceRecord(loginUserId, studentId, courseId, taskId, lat, lon, base64Image, ts, ok -> {
+                                if (ok) {
+                                    saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, true);
+                                    showToast("签到成功");
+                                } else {
+                                    saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, false);
+                                }
+                                reloadRecords();
+                            });
+                        } else {
+                            saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, false);
+                            showToast(msg.isEmpty() ? "签到失败：人脸未匹配" : msg);
+                            if (!msg.isEmpty()) {
+                                LogUtil.e(TAG, "人脸识别未匹配: " + msg);
+                            }
+                            reloadRecords();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.studentattendanceterminal.models.FaceRecognitionResult> call, Throwable t) {
+                        saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, false);
+                        showToast("签到失败：识别服务不可用");
+                        LogUtil.e(TAG, "人脸识别接口异常: " + t.getMessage());
+                        reloadRecords();
+                    }
+                });
+    }
+
+    private void saveLocalRecord(Long studentId, Long courseId, byte[] imageBytes, long ts, double lat, double lon, boolean success) {
+        Context ctx = appContext != null ? appContext : requireContext();
+        new Thread(() -> {
+            AttendanceDbHelper.getInstance(ctx)
+                    .insertCheckinWithCourse(ts, lat, lon, imageBytes, courseId, studentId, success);
+        }).start();
+    }
+
+    private boolean isWithinTaskRadius(double lat, double lon, Double targetLat, Double targetLon, Integer radiusMeters) {
+        if (targetLat == null || targetLon == null || radiusMeters == null || radiusMeters <= 0) {
+            return false;
+        }
+        double distance = haversineMeters(lat, lon, targetLat, targetLon);
+        return distance <= radiusMeters;
+    }
+
+    private double haversineMeters(double lat1, double lon1, double lat2, double lon2) {
+        final double R = 6371000.0; // meters
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
     private void loadCoursesToSpinner() {
@@ -537,8 +663,9 @@ public class HomeFragment extends Fragment {
         }
         
         // 从服务器获取学生选修的课程
+        Long userId = getLoggedInUserId();
         com.example.studentattendanceterminal.network.ApiClient.getStudentService()
-            .getStudentCourses(studentId)
+            .getStudentCourses(userId, studentId)
             .enqueue(new retrofit2.Callback<java.util.List<com.example.studentattendanceterminal.models.StudentCourse>>() {
                 @Override
                 public void onResponse(retrofit2.Call<java.util.List<com.example.studentattendanceterminal.models.StudentCourse>> call, 
@@ -548,6 +675,7 @@ public class HomeFragment extends Fragment {
                         // 检查每个课程是否有活跃的考勤任务
                         checkCoursesWithTasks(serverCourses);
                     } else {
+                        LogUtil.e(TAG, "获取课程列表失败: code=" + response.code() + ", msg=" + response.message());
                         // 如果网络请求失败，使用本地数据
                         loadCoursesFromLocal();
                     }
@@ -638,7 +766,6 @@ public class HomeFragment extends Fragment {
                         new String[]{"暂无需要签到的课程"});
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                     spinnerCourse.setAdapter(adapter);
-                    showToast("当前没有需要签到的课程");
                 } else {
                     // 更新Spinner，只显示有考勤任务的课程
                     Context ctx = appContext != null ? appContext : requireContext();
@@ -695,6 +822,12 @@ public class HomeFragment extends Fragment {
     private Long getLoggedInStudentId() {
         android.content.SharedPreferences prefs = requireContext().getSharedPreferences("auth_prefs", Context.MODE_PRIVATE);
         long id = prefs.getLong("student_id", -1L);
+        return id > 0 ? id : null;
+    }
+
+    private Long getLoggedInUserId() {
+        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("auth_prefs", Context.MODE_PRIVATE);
+        long id = prefs.getLong("user_id", -1L);
         return id > 0 ? id : null;
     }
 

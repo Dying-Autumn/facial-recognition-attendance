@@ -235,6 +235,28 @@ function getCurrentUser() {
     return userStr ? JSON.parse(userStr) : null;
 }
 
+// 获取当前学生ID（优先从localStorage，其次通过学号查找并缓存）
+async function getCurrentStudentId() {
+    var currentUser = getCurrentUser();
+    if (!currentUser) return null;
+    if (currentUser.studentId) {
+        return currentUser.studentId;
+    }
+    if (currentUser.studentNumber) {
+        try {
+            const student = await StudentAPI.getByNumber(currentUser.studentNumber);
+            if (student && student.studentId) {
+                currentUser.studentId = student.studentId;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                return student.studentId;
+            }
+        } catch (e) {
+            console.error('获取学生ID失败:', e);
+        }
+    }
+    return null;
+}
+
 // 退出登录
 function logout() {
     localStorage.removeItem('currentUser');
@@ -267,6 +289,8 @@ function updateUserDisplay() {
 
 // ========== 角色权限控制 ==========
 // 菜单权限配置：定义每个角色可以看到的菜单
+const FACE_SERVICE_URL = window.FACE_SERVICE_URL || 'http://127.0.0.1:8000/embed';
+
 var menuPermissions = {
     // 管理员(roleId=1): 所有菜单
     1: {
@@ -282,6 +306,8 @@ var menuPermissions = {
         'business': true,
         'publish-task': true,
         'statistics': true,
+        'face-data-entry': true,
+        'face-test': true,
         'course-selection': true
     },
     // 教师(roleId=2): 仪表盘、学生信息、自己的教师信息、课程信息、考勤管理
@@ -298,6 +324,8 @@ var menuPermissions = {
         'business': true,
         'publish-task': true,
         'statistics': true,
+        'face-data-entry': true,
+        'face-test': true,
         'course-selection': false
     },
     // 学生(roleId=3): 仅能管理自己的学生信息、选课
@@ -314,6 +342,8 @@ var menuPermissions = {
         'business': true,
         'publish-task': false,
         'statistics': true,      // 可以查看考勤记录
+        'face-data-entry': true,
+        'face-test': true,
         'course-selection': true     // 可以选课
     }
 };
@@ -506,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                         </thead>
                                         <tbody id="course-table-body">
                                             <tr>
-                                                <td colspan="4" style="text-align: center;">加载中...</td>
+                                                <td colspan="3" style="text-align: center;">加载中...</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -814,10 +844,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>打卡时间</th>
-                                                <th>考勤结果</th>
-                                                <th>可信度</th>
-                                                <th>备注</th>
+                                <th>打卡时间</th>
+                                <th>考勤结果</th>
+                                <th>备注</th>
                                             </tr>
                                         </thead>
                                         <tbody id="my-attendance-body">
@@ -870,6 +899,98 @@ document.addEventListener('DOMContentLoaded', function () {
                     `;
                     setTimeout(initStatisticsPage, 100);
                 }
+                break;
+            case 'face-data-entry':
+                content = `
+                    <div class="card" id="face-data-entry-card">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <div class="card-title">人脸数据录入</div>
+                            <span style="color: #7f8c8d; font-size: 0.9rem;">点击拍照时自动申请摄像头权限</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start;">
+                                <div>
+                                    <div style="position: relative; background: linear-gradient(145deg, #1f2d3d 0%, #30475e 45%, #22313f 100%); border-radius: 12px; overflow: hidden; min-height: 280px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);">
+                                        <video id="face-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                        <canvas id="face-canvas" style="display: none;"></canvas>
+                                        <div id="face-video-mask" style="position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.35) 65%);"></div>
+                                        <div style="position: absolute; inset: 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; pointer-events: none;"></div>
+                                    </div>
+                                    <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+                                        <button class="btn btn-accent" id="btn-face-capture">拍照</button>
+                                        <button class="btn" id="btn-face-upload-trigger">上传照片</button>
+                                        <button class="btn btn-secondary" id="btn-face-stop-camera">关闭摄像头</button>
+                                        <input type="file" id="face-file-input" accept="image/*" style="display: none;">
+                                    </div>
+                                    <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                                        <input type="text" id="face-url-input" placeholder="粘贴图片链接" style="flex: 1; min-width: 220px; padding: 8px 10px; border: 1px solid #dfe4ea; border-radius: 8px;">
+                                        <button class="btn btn-secondary" id="btn-face-url-load">从链接加载</button>
+                                    </div>
+                                    <p style="margin-top: 8px; color: #7f8c8d; font-size: 0.9rem;">确保光线充足、正脸无遮挡。首次拍照会请求摄像头权限。</p>
+                                </div>
+                                <div>
+                                    <div class="card" style="margin: 0;">
+                                        <div class="card-header" style="justify-content: space-between;">
+                                            <div class="card-title" style="font-size: 1rem;">预览与提交</div>
+                                            <span id="face-status-text" style="color: #7f8c8d; font-size: 0.9rem;"></span>
+                                        </div>
+                                        <div class="card-body">
+                                            <div style="border: 1px dashed #dfe4ea; border-radius: 12px; padding: 10px; text-align: center; min-height: 240px; display: flex; align-items: center; justify-content: center; background: #fafafa;">
+                                                <img id="face-preview" alt="人脸预览" style="max-width: 100%; max-height: 320px; display: none; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.08);">
+                                                <div id="face-preview-placeholder" style="color: #95a5a6;">等待采集或上传照片</div>
+                                            </div>
+                                            <button class="btn btn-accent" id="btn-face-submit" style="width: 100%; margin-top: 12px;">提交并保存</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                setTimeout(initFaceDataEntryPage, 80);
+                break;
+            case 'face-test':
+                content = `
+                    <div class="card" id="face-test-card">
+                        <div class="card-header" style="justify-content: space-between; align-items: center;">
+                            <div class="card-title">人脸识别测试</div>
+                            <span style="color: #7f8c8d; font-size: 0.9rem;">上传人脸照片，调用服务端模型检测与提取特征</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start;">
+                                <div>
+                                    <div style="border: 1px dashed #dfe4ea; border-radius: 12px; padding: 10px; text-align: center; min-height: 260px; display: flex; align-items: center; justify-content: center; background: #fafafa;">
+                                        <img id="face-test-preview" alt="人脸预览" style="max-width: 100%; max-height: 320px; display: none; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.08);">
+                                        <div id="face-test-placeholder" style="color: #95a5a6;">请选择或拖拽图片</div>
+                                    </div>
+                                    <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+                                        <input type="file" id="face-test-file" accept="image/*" style="display: none;">
+                                        <button class="btn btn-accent" id="btn-face-test-upload">选择图片</button>
+                                        <button class="btn" id="btn-face-test-clear">清除</button>
+                                    </div>
+                                    <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                                        <input type="text" id="face-test-url-input" placeholder="粘贴图片链接" style="flex: 1; min-width: 220px; padding: 8px 10px; border: 1px solid #dfe4ea; border-radius: 8px;">
+                                        <button class="btn btn-secondary" id="btn-face-test-url-load">从链接加载</button>
+                                    </div>
+                                    <p style="margin-top: 8px; color: #7f8c8d; font-size: 0.9rem;">支持 JPG/PNG；图片会直接发送到服务端模型，不会本地存储。</p>
+                                </div>
+                                <div>
+                                    <div class="card" style="margin: 0;">
+                                        <div class="card-header" style="justify-content: space-between;">
+                                            <div class="card-title" style="font-size: 1rem;">检测结果</div>
+                                            <span id="face-test-status" style="color: #7f8c8d; font-size: 0.9rem;">等待上传</span>
+                                        </div>
+                                        <div class="card-body" style="display: flex; flex-direction: column; gap: 12px;">
+                                            <button class="btn btn-accent" id="btn-face-test-run">调用识别服务</button>
+                                            <pre id="face-test-result" style="background: #f7f9fb; border-radius: 10px; padding: 12px; min-height: 160px; border: 1px solid #e5e9ef; overflow: auto; white-space: pre-wrap; word-break: break-all;">尚未开始测试</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                setTimeout(initFaceTestPage, 50);
                 break;
             case 'course-selection':
                 content = `
@@ -1073,7 +1194,7 @@ async function loadStudents() {
     const tbody = document.getElementById('student-table-body');
     if (!tbody) return;
     
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">加载中...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">加载中...</td></tr>';
     
     try {
         const students = await StudentAPI.getAll();
@@ -1738,31 +1859,32 @@ async function loadMyAttendanceRecords() {
     var tbody = document.getElementById('my-attendance-body');
     if (!tbody) return;
     
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">加载中...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">加载中...</td></tr>';
     
     try {
-        var records = await AttendanceRecordAPI.getMyRecords();
+        // 使用补齐缺勤的接口
+        var records = await AttendanceRecordAPI.getMyRecordsFull();
         
         if (records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">暂无考勤记录</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">暂无考勤记录</td></tr>';
             return;
         }
         
         tbody.innerHTML = records.map(function(record) {
-            var score = record.confidenceScore ? (record.confidenceScore * 100).toFixed(2) + '%' : '-';
             var time = record.checkInTime ? new Date(record.checkInTime).toLocaleString() : '-';
-            var resultColor = record.attendanceResult === '正常' ? 'green' : 'red';
+            var result = record.attendanceResult || '未签到';
+            // 将非“正常”均视为失败展示红色
+            var resultColor = result === '正常' ? 'green' : 'red';
             
             return '<tr>' +
                 '<td>' + time + '</td>' +
-                '<td style="color:' + resultColor + '">' + (record.attendanceResult || '-') + '</td>' +
-                '<td>' + score + '</td>' +
+                '<td style="color:' + resultColor + '">' + result + '</td>' +
                 '<td>' + (record.remark || '-') + '</td>' +
             '</tr>';
         }).join('');
     } catch (error) {
         console.error('加载考勤记录失败:', error);
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">加载失败: ' + (error.message || '未知错误') + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: red;">加载失败: ' + (error.message || '未知错误') + '</td></tr>';
     }
 }
 
@@ -3042,29 +3164,20 @@ function loadTabData(tabId) {
 }
 
 // 加载可选课程
-function loadAvailableCourses() {
+async function loadAvailableCourses() {
     const container = document.getElementById('available-courses-list');
     if (!container) return;
     
     container.innerHTML = '<div class="loading">正在加载...</div>';
 
-    var currentUser = getCurrentUser();
-    if (!currentUser || !currentUser.studentNumber) { // 应该用 userId 还是 studentId? 假设 getCurrentUserId 返回的是 ID
-       // API 需要 studentId, 这里需要确认 currentUser 结构
-       // 假设 currentUser 是 User 对象，可能不包含 studentId。需要通过 API 获取或者假设 userId 就是 studentId (不一定)
-       // 暂时使用 API.getCurrentUserId() 获取 userId
+    const studentId = await getCurrentStudentId();
+    if (!studentId) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">无法获取当前学生信息，无法加载可选课程</div>';
+        showToast('无法获取当前学生信息', 'error');
+        return;
     }
     
-    // 暂时用 1 做测试，稍后应该修复
-    // StudentCourseAPI.getAvailableCourses(1) 
-    
-    // 更好的是：
-    var userId = API.getCurrentUserId();
-    // 如果需要 studentId，可能需要先 fetch student info.
-    // 但这里的 API 设计似乎是用 studentId.
-    // 为了不破坏现有逻辑太多，先只改函数名，ID 暂时保留原样或者尝试获取。
-    
-    StudentCourseAPI.getAvailableCourses(userId || 1) // 假设学生ID为1
+    StudentCourseAPI.getAvailableCourses(studentId)
         .then(courses => {
             if (!courses || courses.length === 0) {
                 container.innerHTML = `
@@ -3131,15 +3244,21 @@ function loadAvailableCourses() {
 }
 
 // 加载我的课程（学生已选）
-function loadStudentSelectedCourses() {
+async function loadStudentSelectedCourses() {
     const container = document.getElementById('my-courses-list');
     if (!container) return;
     
     container.innerHTML = '<div class="loading">正在加载...</div>';
 
+    const studentId = await getCurrentStudentId();
+    if (!studentId) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">无法获取当前学生信息，无法加载已选课程</div>';
+        showToast('无法获取当前学生信息', 'error');
+        return;
+    }
+
     // 调用后端API获取已选课程
-    var userId = API.getCurrentUserId();
-    StudentCourseAPI.getStudentCourses(userId || 1) // 假设学生ID为1
+    StudentCourseAPI.getStudentCourses(studentId)
         .then(courses => {
             if (!courses || courses.length === 0) {
                 container.innerHTML = `
@@ -3208,14 +3327,19 @@ function loadStudentSelectedCourses() {
 }
 
 // 单个选课
-function enrollCourse(classId) {
+async function enrollCourse(classId) {
     if (!confirm('确认要选修这门课程吗？')) {
         return;
     }
 
+    const studentId = await getCurrentStudentId();
+    if (!studentId) {
+        showToast('无法获取当前学生信息，选课失败', 'error');
+        return;
+    }
+
     // 调用后端API进行选课
-    var userId = API.getCurrentUserId();
-    StudentCourseAPI.enroll(userId || 1, classId) // 假设学生ID为1
+    StudentCourseAPI.enroll(studentId, classId)
         .then(result => {
             showToast(`课程 ${classId} 选修成功`, 'success');
             // 刷新数据
@@ -3229,14 +3353,19 @@ function enrollCourse(classId) {
 }
 
 // 退课
-function dropCourse(classId) {
+async function dropCourse(classId) {
     if (!confirm('确认要退修这门课程吗？此操作不可撤销。')) {
         return;
     }
 
+    const studentId = await getCurrentStudentId();
+    if (!studentId) {
+        showToast('无法获取当前学生信息，退课失败', 'error');
+        return;
+    }
+
     // 调用后端API进行退课
-    var userId = API.getCurrentUserId();
-    StudentCourseAPI.drop(userId || 1, classId) // 假设学生ID为1
+    StudentCourseAPI.drop(studentId, classId)
         .then(result => {
             showToast(`课程 ${classId} 退修成功`, 'success');
             // 刷新数据
@@ -3577,4 +3706,373 @@ function getStatusColor(status) {
         '请假': '#17a2b8'
     };
     return colorMap[status] || '#6c757d';
+}
+
+// ========== 人脸数据录入 ========== 
+const faceEntryState = {
+    stream: null,
+    capturedData: null
+};
+
+function initFaceDataEntryPage() {
+    const captureBtn = document.getElementById('btn-face-capture');
+    const uploadTrigger = document.getElementById('btn-face-upload-trigger');
+    const stopCameraBtn = document.getElementById('btn-face-stop-camera');
+    const fileInput = document.getElementById('face-file-input');
+    const submitBtn = document.getElementById('btn-face-submit');
+    const urlInput = document.getElementById('face-url-input');
+    const urlLoadBtn = document.getElementById('btn-face-url-load');
+    const videoEl = document.getElementById('face-video');
+    const previewImg = document.getElementById('face-preview');
+    const placeholder = document.getElementById('face-preview-placeholder');
+    const statusText = document.getElementById('face-status-text');
+
+    if (!captureBtn || !uploadTrigger || !fileInput || !submitBtn || !videoEl) {
+        console.warn('人脸录入：页面元素未加载完成');
+        return;
+    }
+
+    captureBtn.onclick = () => captureFaceSnapshot(videoEl, previewImg, placeholder, statusText);
+    uploadTrigger.onclick = () => fileInput.click();
+    if (stopCameraBtn) {
+        stopCameraBtn.onclick = () => stopFaceCamera(statusText);
+    }
+    fileInput.onchange = (e) => handleFaceFileUpload(e.target.files, previewImg, placeholder, statusText);
+    submitBtn.onclick = () => submitFaceData(statusText);
+    if (urlLoadBtn) {
+        urlLoadBtn.onclick = () => {
+            const url = urlInput ? urlInput.value.trim() : '';
+            if (!url) {
+                showToast('请填写图片链接', 'warning');
+                return;
+            }
+            loadImageFromUrl(url, (dataUrl) => {
+                setFacePreview(dataUrl, previewImg, placeholder);
+                if (statusText) statusText.textContent = '已从链接加载';
+            }, (msg) => {
+                showToast(msg || '图片加载失败', 'error');
+                if (statusText) statusText.textContent = '链接加载失败';
+            }, statusText);
+        };
+    }
+
+    // 页面初始化时尝试加载已有的人脸数据
+    loadExistingFaceData(previewImg, placeholder, statusText);
+}
+
+async function startFaceCamera(videoEl, statusText) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('当前浏览器不支持摄像头访问，请改用上传照片', 'warning');
+        return;
+    }
+
+    try {
+        stopFaceCamera();
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        videoEl.srcObject = stream;
+        faceEntryState.stream = stream;
+        if (statusText) statusText.textContent = '摄像头已开启';
+    } catch (err) {
+        console.error('打开摄像头失败：', err);
+        showToast('无法访问摄像头，请检查权限或设备', 'error');
+        if (statusText) statusText.textContent = '摄像头未开启';
+    }
+}
+
+function stopFaceCamera(statusText) {
+    if (faceEntryState.stream) {
+        faceEntryState.stream.getTracks().forEach(track => track.stop());
+        faceEntryState.stream = null;
+    }
+    if (statusText) statusText.textContent = '摄像头已关闭';
+}
+
+async function captureFaceSnapshot(videoEl, previewImg, placeholder, statusText) {
+    // 若未开启摄像头，点击拍照时自动申请权限并开启
+    if (!faceEntryState.stream) {
+        if (statusText) statusText.textContent = '正在请求摄像头权限...';
+        await startFaceCamera(videoEl, statusText);
+        if (!faceEntryState.stream) {
+            return;
+        }
+        await waitVideoReady(videoEl);
+    }
+
+    const canvas = document.getElementById('face-canvas');
+    if (!canvas) return;
+
+    canvas.width = videoEl.videoWidth || 640;
+    canvas.height = videoEl.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+    setFacePreview(dataUrl, previewImg, placeholder);
+    if (statusText) statusText.textContent = '已从摄像头采集照片';
+}
+
+function waitVideoReady(videoEl) {
+    return new Promise((resolve) => {
+        if (videoEl.readyState >= 2) {
+            resolve();
+            return;
+        }
+        const onLoaded = () => {
+            videoEl.removeEventListener('loadeddata', onLoaded);
+            resolve();
+        };
+        videoEl.addEventListener('loadeddata', onLoaded);
+        setTimeout(resolve, 800);
+    });
+}
+
+function handleFaceFileUpload(files, previewImg, placeholder, statusText) {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    if (!file.type.startsWith('image/')) {
+        showToast('请上传图片文件', 'warning');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        setFacePreview(reader.result, previewImg, placeholder);
+        if (statusText) statusText.textContent = '已选择上传的照片';
+    };
+    reader.readAsDataURL(file);
+}
+
+function setFacePreview(dataUrl, previewImg, placeholder) {
+    faceEntryState.capturedData = dataUrl;
+    if (previewImg) {
+        previewImg.src = dataUrl;
+        previewImg.style.display = 'block';
+    }
+    if (placeholder) {
+        placeholder.style.display = 'none';
+    }
+}
+
+// 通用：从 URL 拉取图片并转为 DataURL
+function loadImageFromUrl(url, onSuccess, onError, statusText) {
+    if (statusText) statusText.textContent = '正在加载图片...';
+    fetch(url, { mode: 'cors' })
+        .then(resp => {
+            if (!resp.ok) throw new Error(`图片请求失败，状态码 ${resp.status}`);
+            return resp.blob();
+        })
+        .then(blob => {
+            if (!blob.type.startsWith('image/')) {
+                throw new Error('链接内容不是图片');
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                if (onSuccess) onSuccess(reader.result);
+            };
+            reader.onerror = () => {
+                if (onError) onError('图片读取失败');
+            };
+            reader.readAsDataURL(blob);
+        })
+        .catch(err => {
+            console.error('加载图片失败', err);
+            if (onError) onError(err.message || '加载图片失败');
+        })
+        .finally(() => {
+            if (statusText) statusText.textContent = '';
+        });
+}
+
+async function loadExistingFaceData(previewImg, placeholder, statusText) {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    try {
+        const data = await FaceDataAPI.getMine();
+        if (data && data.faceTemplate) {
+            setFacePreview(data.faceTemplate, previewImg, placeholder);
+            if (statusText) statusText.textContent = '已加载历史人脸数据，可重新覆盖';
+        }
+    } catch (err) {
+        console.warn('加载历史人脸数据失败：', err.message || err);
+    }
+}
+
+async function submitFaceData(statusText) {
+    const user = getCurrentUser();
+    if (!user) {
+        showToast('请先登录后再提交人脸数据', 'error');
+        return;
+    }
+
+    if (!faceEntryState.capturedData) {
+        showToast('请先拍照或上传照片', 'warning');
+        return;
+    }
+
+    if (statusText) statusText.textContent = '正在保存...';
+    try {
+        await FaceDataAPI.save({
+            userId: user.userId,
+            faceImage: faceEntryState.capturedData
+        });
+        showToast('人脸数据已保存', 'success');
+        if (statusText) statusText.textContent = '保存成功，可重新采集覆盖';
+    } catch (err) {
+        console.error('保存人脸数据失败：', err);
+        showToast(err.message || '保存人脸数据失败', 'error');
+        if (statusText) statusText.textContent = '保存失败，请重试';
+    }
+}
+
+// ========== 人脸识别测试 ==========
+const faceTestState = {
+    dataUrl: null
+};
+
+function initFaceTestPage() {
+    const fileInput = document.getElementById('face-test-file');
+    const uploadBtn = document.getElementById('btn-face-test-upload');
+    const clearBtn = document.getElementById('btn-face-test-clear');
+    const runBtn = document.getElementById('btn-face-test-run');
+    const urlInput = document.getElementById('face-test-url-input');
+    const urlLoadBtn = document.getElementById('btn-face-test-url-load');
+    const preview = document.getElementById('face-test-preview');
+    const placeholder = document.getElementById('face-test-placeholder');
+    const statusText = document.getElementById('face-test-status');
+    const resultBox = document.getElementById('face-test-result');
+    const dropZone = preview?.parentElement;
+
+    if (!fileInput || !uploadBtn || !clearBtn || !runBtn) {
+        console.warn('人脸识别测试：页面元素未加载完成');
+        return;
+    }
+
+    uploadBtn.onclick = () => fileInput.click();
+    clearBtn.onclick = () => {
+        faceTestState.dataUrl = null;
+        if (preview) {
+            preview.src = '';
+            preview.style.display = 'none';
+        }
+        if (placeholder) placeholder.style.display = 'block';
+        if (statusText) statusText.textContent = '已清除';
+        if (resultBox) resultBox.textContent = '尚未开始测试';
+    };
+    fileInput.onchange = (e) => handleFaceTestFile(e.target.files, preview, placeholder, statusText);
+    runBtn.onclick = () => runFaceTest(statusText, resultBox);
+    if (urlLoadBtn) {
+        urlLoadBtn.onclick = () => {
+            const url = urlInput ? urlInput.value.trim() : '';
+            if (!url) {
+                showToast('请填写图片链接', 'warning');
+                return;
+            }
+            loadImageFromUrl(url, (dataUrl) => {
+                faceTestState.dataUrl = dataUrl;
+                if (preview) {
+                    preview.src = dataUrl;
+                    preview.style.display = 'block';
+                }
+                if (placeholder) placeholder.style.display = 'none';
+                if (statusText) statusText.textContent = '已从链接加载';
+            }, (msg) => {
+                showToast(msg || '图片加载失败', 'error');
+                if (statusText) statusText.textContent = '链接加载失败';
+            }, statusText);
+        };
+    }
+
+    // 支持拖拽上传
+    if (dropZone) {
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#409eff';
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = '#dfe4ea';
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#dfe4ea';
+            if (e.dataTransfer?.files?.length) {
+                handleFaceTestFile(e.dataTransfer.files, preview, placeholder, statusText);
+            }
+        });
+    }
+}
+
+function handleFaceTestFile(files, preview, placeholder, statusText) {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    if (!file.type.startsWith('image/')) {
+        showToast('请上传图片文件', 'warning');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        faceTestState.dataUrl = reader.result;
+        if (preview) {
+            preview.src = reader.result;
+            preview.style.display = 'block';
+        }
+        if (placeholder) placeholder.style.display = 'none';
+        if (statusText) statusText.textContent = '已选择图片';
+    };
+    reader.readAsDataURL(file);
+}
+
+function dataUrlToBlob(dataUrl) {
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+}
+
+async function runFaceTest(statusText, resultBox) {
+    if (!faceTestState.dataUrl) {
+        showToast('请先选择图片', 'warning');
+        return;
+    }
+
+    if (statusText) statusText.textContent = '调用识别服务中...';
+    if (resultBox) resultBox.textContent = '请求中...';
+
+    try {
+        const data = await FaceRecognitionAPI.recognize(faceTestState.dataUrl);
+        if (!data) throw new Error('服务无响应');
+
+        const lines = [];
+        lines.push(`has_face: ${data.hasFace}`);
+        lines.push(`matched: ${data.matched}`);
+        if (data.similarity !== undefined) lines.push(`similarity: ${Number(data.similarity).toFixed(4)}`);
+        if (data.threshold !== undefined) lines.push(`threshold: ${Number(data.threshold).toFixed(4)}`);
+        if (data.userId) lines.push(`userId: ${data.userId}`);
+        if (data.userName) lines.push(`userName: ${data.userName}`);
+        if (data.message) lines.push(`message: ${data.message}`);
+
+        if (resultBox) resultBox.textContent = lines.join('\n');
+
+        if (data.hasFace && data.matched) {
+            if (statusText) statusText.textContent = '匹配成功';
+            showToast('匹配成功', 'success');
+        } else if (data.hasFace && !data.matched) {
+            if (statusText) statusText.textContent = '未匹配到库内人脸';
+            showToast(data.message || '未匹配到库内人脸', 'warning');
+        } else {
+            if (statusText) statusText.textContent = '未检测到人脸';
+            showToast(data.message || '未检测到人脸', 'warning');
+        }
+    } catch (err) {
+        console.error('人脸识别测试失败', err);
+        if (statusText) statusText.textContent = '调用失败';
+        if (resultBox) resultBox.textContent = err.message || '调用失败';
+        showToast(err.message || '识别失败', 'error');
+    }
 }

@@ -314,6 +314,11 @@ class AttendanceRecordAPI {
     static getMyRecords() {
         return API.get('/attendance-records/my');
     }
+
+    // 获取当前登录学生的考勤记录（包含缺勤补齐）
+    static getMyRecordsFull() {
+        return API.get('/attendance-records/my/full');
+    }
 }
 
 // ========== 学生选课API ==========
@@ -365,6 +370,31 @@ class StudentCourseAPI {
     // 获取课程推荐
     static getRecommendedCourses(studentId) {
         return API.get(`/student-course-classes/student/${studentId}/recommended-courses`);
+    }
+}
+
+// 人脸数据API
+class FaceDataAPI {
+    // 保存或更新当前用户的人脸数据
+    static save(payload) {
+        return API.post('/face-data', payload);
+    }
+
+    // 获取当前用户的人脸数据
+    static getMine() {
+        return API.get('/face-data/my');
+    }
+
+    // 根据用户ID获取人脸数据（管理员/教师使用）
+    static getByUser(userId) {
+        return API.get(`/face-data/user/${userId}`);
+    }
+}
+
+// 人脸识别测试 API
+class FaceRecognitionAPI {
+    static recognize(faceImage) {
+        return API.post('/face-recognize', { faceImage });
     }
 }
 

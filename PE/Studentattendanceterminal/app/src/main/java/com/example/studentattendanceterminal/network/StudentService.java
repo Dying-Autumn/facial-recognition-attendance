@@ -1,6 +1,8 @@
 package com.example.studentattendanceterminal.network;
 
 import com.example.studentattendanceterminal.models.AttendanceDTO;
+import com.example.studentattendanceterminal.models.FaceRecognitionRequest;
+import com.example.studentattendanceterminal.models.FaceRecognitionResult;
 import com.example.studentattendanceterminal.models.Student;
 import com.example.studentattendanceterminal.models.StudentCourse;
 
@@ -19,11 +21,17 @@ public interface StudentService {
 
     // 上传考勤记录
     @POST("attendance/record")
-    Call<ResponseBody> uploadAttendance(@Body AttendanceDTO record);
+    Call<ResponseBody> uploadAttendance(@retrofit2.http.Header("X-User-Id") Long userId,
+                                        @Body AttendanceDTO record);
+
+    // 人脸识别（调用后端识别并返回匹配结果）
+    @POST("face-recognize")
+    Call<FaceRecognitionResult> recognizeFace(@Body FaceRecognitionRequest request);
     
     // 获取学生选修的课程列表
     @GET("student-course-classes/student/{studentId}/courses")
-    Call<List<StudentCourse>> getStudentCourses(@Path("studentId") Long studentId);
+    Call<List<StudentCourse>> getStudentCourses(@retrofit2.http.Header("X-User-Id") Long userId,
+                                                @Path("studentId") Long studentId);
     
     // 根据班级ID获取考勤任务
     @GET("attendance-tasks/class/{courseClassId}")

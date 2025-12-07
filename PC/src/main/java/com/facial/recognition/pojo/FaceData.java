@@ -4,17 +4,17 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "face_data")
+@Table(name = "FaceData")
 public class FaceData {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "FaceDataID")
     private Long faceDataId; // 主键
 
-    @Column(name = "face_template", nullable = false, columnDefinition = "TEXT")
-    private String faceTemplate; // 人脸模板数据
+    @Column(name = "FaceTemplate", nullable = false, columnDefinition = "BLOB")
+    private String faceTemplate; // 人脸模板数据（当前存储Base64或特征）
 
-    @Column(name = "created_date", nullable = false)
+    @Column(name = "CreatedDate", nullable = false)
     private LocalDateTime createdDate; // 创建日期
 
     @Column(name = "UserID", nullable = false, unique = true)

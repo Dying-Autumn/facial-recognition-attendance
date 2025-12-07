@@ -2,6 +2,7 @@ package com.facial.recognition.dto;
 
 public class LoginResponseDTO {
     private Integer userId;
+    private Long studentId; // 学生ID
     private String username;
     private String realName;
     private String phoneNumber;
@@ -21,6 +22,14 @@ public class LoginResponseDTO {
 
     public void setUserId(Integer userId) {
         this.userId = userId;
+    }
+
+    public Long getStudentId() {
+        return studentId;
+    }
+
+    public void setStudentId(Long studentId) {
+        this.studentId = studentId;
     }
 
     public String getUsername() {

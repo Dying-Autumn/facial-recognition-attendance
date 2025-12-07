@@ -224,7 +224,10 @@ public class UserService implements IUserService {
             // 学生角色
             response.setStudentNumber(number);
             Optional<Student> student = studentRepository.findByUserId(user.getUserID());
-            student.ifPresent(s -> response.setClassName(s.getClassName()));
+            student.ifPresent(s -> {
+                response.setClassName(s.getClassName());
+                response.setStudentId(s.getStudentId());
+            });
         } else if (roleId != null && roleId == 2) {
             // 教师角色
             response.setJobNumber(number);

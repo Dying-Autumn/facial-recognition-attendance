@@ -42,6 +42,7 @@ public class MeFragment extends Fragment {
     private View layoutProfileInfo;
     private TextView tvStudentName;
     private TextView tvStudentNumberDisplay;
+    private TextView tvStudentClass;
     private MaterialButton btnViewLogs;
     private MaterialButton btnLogout;
 
@@ -62,6 +63,7 @@ public class MeFragment extends Fragment {
         layoutProfileInfo = view.findViewById(R.id.layout_profile_info);
         tvStudentName = view.findViewById(R.id.tv_student_name);
         tvStudentNumberDisplay = view.findViewById(R.id.tv_student_number_display);
+        tvStudentClass = view.findViewById(R.id.tv_student_class);
         btnViewLogs = view.findViewById(R.id.btn_view_logs);
         btnLogout = view.findViewById(R.id.btn_logout);
 
@@ -93,7 +95,7 @@ public class MeFragment extends Fragment {
                     if (response.isSuccessful() && response.body() != null) {
                         User user = response.body();
                         // 2. 登录成功，再调用获取学生信息接口（为了拿到 studentId）
-                        fetchStudentInfo(number, user.getName());
+                        fetchStudentInfo(number, user);
                     } else {
                         if (isAdded()) {
                             btnLogin.setEnabled(true);
@@ -135,6 +137,7 @@ public class MeFragment extends Fragment {
         SharedPreferences prefs = requireContext().getSharedPreferences("auth_prefs", Context.MODE_PRIVATE);
         String savedNumber = prefs.getString("student_number", null);
         String savedName = prefs.getString("student_name", "");
+        String savedClass = prefs.getString("student_class", "");
         
         if (!TextUtils.isEmpty(savedNumber)) {
             // 已登录：显示个人信息，隐藏登录框
@@ -143,6 +146,7 @@ public class MeFragment extends Fragment {
             
             tvStudentName.setText(TextUtils.isEmpty(savedName) ? "学生" : savedName);
             tvStudentNumberDisplay.setText("学号：" + savedNumber);
+            tvStudentClass.setText("班级：" + (TextUtils.isEmpty(savedClass) ? "-" : savedClass));
         } else {
             // 未登录：显示登录框，隐藏个人信息
             layoutLoginForm.setVisibility(View.VISIBLE);
@@ -155,7 +159,7 @@ public class MeFragment extends Fragment {
         }
     }
 
-    private void fetchStudentInfo(String number, String userName) {
+    private void fetchStudentInfo(String number, User loginUser) {
         StudentService service = ApiClient.getStudentService();
         service.getByNumber(number).enqueue(new Callback<Student>() {
             @Override
@@ -164,11 +168,11 @@ public class MeFragment extends Fragment {
                 
                 if (response.isSuccessful() && response.body() != null) {
                     Student s = response.body();
-                    saveLoginInfo(s.getStudentNumber(), s.getId(), s.getName());
+                    saveLoginInfo(loginUser, s.getStudentNumber(), s.getId(), s.getName(), s.getClassName());
                 } else {
                     // 这种情况比较少见：用户存在但学生表没数据
                     // 暂时处理为：保存用户信息，ID暂时用 0 或其他标识
-                    saveLoginInfo(number, -1L, userName);
+                    saveLoginInfo(loginUser, number, -1L, loginUser != null ? loginUser.getName() : null, null);
                 }
             }
 
@@ -182,12 +186,14 @@ public class MeFragment extends Fragment {
         });
     }
 
-    private void saveLoginInfo(String number, Long id, String name) {
+    private void saveLoginInfo(User loginUser, String number, Long id, String name, String className) {
         SharedPreferences prefs = requireContext().getSharedPreferences("auth_prefs", Context.MODE_PRIVATE);
         prefs.edit()
                 .putString("student_number", number)
                 .putLong("student_id", id)
+                .putLong("user_id", loginUser != null && loginUser.getId() != null ? loginUser.getId() : -1L)
                 .putString("student_name", name)
+                .putString("student_class", className)
                 .apply();
         
         if (isAdded()) {
@@ -210,7 +216,7 @@ public class MeFragment extends Fragment {
         if (localS != null) {
             // 模拟密码验证：如果是 "123456" 或与学号相同则通过（仅作演示）
             if ("123456".equals(password) || number.equals(password)) {
-                saveLoginInfo(localS.number, localS.id, localS.name);
+                saveLoginInfo(null, localS.number, localS.id, localS.name, null);
                 Toast.makeText(getContext(), "网络不可用，已切换为离线登录", Toast.LENGTH_SHORT).show();
             } else {
                 tvLoginStatus.setText("网络错误");
