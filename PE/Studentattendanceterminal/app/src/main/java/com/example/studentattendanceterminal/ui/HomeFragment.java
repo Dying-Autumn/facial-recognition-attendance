@@ -506,9 +506,9 @@ public class HomeFragment extends Fragment {
     
     private void uploadAttendanceRecord(Long userId, Long studentId, Long courseId, Long taskId, double lat, double lon, String base64Image, long ts,
                                         java.util.function.Consumer<Boolean> onDone) {
-        com.example.studentattendanceterminal.models.AttendanceDTO record =
+        com.example.studentattendanceterminal.models.AttendanceDTO record = 
             new com.example.studentattendanceterminal.models.AttendanceDTO(studentId, courseId, taskId, lat, lon, base64Image, ts, "正常");
-
+            
         com.example.studentattendanceterminal.network.ApiClient.getStudentService()
             .uploadAttendance(userId, record)
             .enqueue(new retrofit2.Callback<okhttp3.ResponseBody>() {
@@ -598,12 +598,12 @@ public class HomeFragment extends Fragment {
                             showToast("人脸匹配成功，正在上传...");
                             uploadAttendanceRecord(loginUserId, studentId, courseId, taskId, lat, lon, base64Image, ts, ok -> {
                                 if (ok) {
-                                    saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, true);
-                                    showToast("签到成功");
+                            saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, true);
+                            showToast("签到成功");
                                 } else {
                                     saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, false);
                                 }
-                                reloadRecords();
+                            reloadRecords();
                             });
                         } else {
                             saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, false);

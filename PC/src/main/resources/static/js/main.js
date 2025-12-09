@@ -844,9 +844,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <table>
                                         <thead>
                                             <tr>
-                                <th>打卡时间</th>
-                                <th>考勤结果</th>
-                                <th>备注</th>
+                                                <th>打卡时间</th>
+                                                <th>考勤结果</th>
+                                                <th>备注</th>
                                             </tr>
                                         </thead>
                                         <tbody id="my-attendance-body">
