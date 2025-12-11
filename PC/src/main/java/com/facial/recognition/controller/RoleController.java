@@ -4,10 +4,15 @@ import com.facial.recognition.pojo.Role;
 import com.facial.recognition.service.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/roles")
@@ -49,6 +54,26 @@ public class RoleController {
     public ResponseEntity<List<Role>> getAllRoles() {
         List<Role> roles = roleService.findAll();
         return ResponseEntity.ok(roles);
+    }
+
+    // 分页获取角色
+    @GetMapping("/paged")
+    public ResponseEntity<?> getRolesPaged(@RequestParam(defaultValue = "0") int page,
+                                           @RequestParam(defaultValue = "10") int size) {
+        if (page < 0 || size <= 0) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("message", "分页参数不合法");
+            return ResponseEntity.badRequest().body(error);
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Role> paged = roleService.findAllPaged(pageable);
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("content", paged.getContent());
+        resp.put("totalElements", paged.getTotalElements());
+        resp.put("totalPages", paged.getTotalPages());
+        resp.put("page", paged.getNumber());
+        resp.put("size", paged.getSize());
+        return ResponseEntity.ok(resp);
     }
 
     // 移除依赖 status 的接口

@@ -42,4 +42,7 @@ public interface StudentService {
     
     // 根据学号删除学生
     void deleteByStudentNumber(String studentNumber);
+
+    // 分页获取学生
+    org.springframework.data.domain.Page<Student> findAllPaged(org.springframework.data.domain.Pageable pageable);
 }

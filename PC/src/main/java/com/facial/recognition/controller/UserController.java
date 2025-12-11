@@ -9,6 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -30,6 +33,26 @@ public class UserController {
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.findAll();
         return ResponseEntity.ok(users);
+    }
+
+    // 分页获取用户
+    @GetMapping("/paged")
+    public ResponseEntity<?> getUsersPaged(@RequestParam(defaultValue = "0") int page,
+                                           @RequestParam(defaultValue = "10") int size) {
+        if (page < 0 || size <= 0) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("message", "分页参数不合法");
+            return ResponseEntity.badRequest().body(error);
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> paged = userService.findAllPaged(pageable);
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("content", paged.getContent());
+        resp.put("totalElements", paged.getTotalElements());
+        resp.put("totalPages", paged.getTotalPages());
+        resp.put("page", paged.getNumber());
+        resp.put("size", paged.getSize());
+        return ResponseEntity.ok(resp);
     }
     
     // 根据ID获取用户
@@ -56,6 +79,27 @@ public class UserController {
     public ResponseEntity<List<User>> getUsersByRoleId(@PathVariable Integer roleId) {
         List<User> users = userService.findByRoleId(roleId);
         return ResponseEntity.ok(users);
+    }
+
+    // 根据角色ID分页获取用户列表
+    @GetMapping("/role/{roleId}/paged")
+    public ResponseEntity<?> getUsersByRoleIdPaged(@PathVariable Integer roleId,
+                                                   @RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "10") int size) {
+        if (page < 0 || size <= 0) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("message", "分页参数不合法");
+            return ResponseEntity.badRequest().body(error);
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> paged = userService.findByRoleIdPaged(roleId, pageable);
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("content", paged.getContent());
+        resp.put("totalElements", paged.getTotalElements());
+        resp.put("totalPages", paged.getTotalPages());
+        resp.put("page", paged.getNumber());
+        resp.put("size", paged.getSize());
+        return ResponseEntity.ok(resp);
     }
 
     // 登录接口 - 返回完整用户信息

@@ -4,6 +4,9 @@ import com.facial.recognition.pojo.Student;
 import com.facial.recognition.service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -24,6 +27,26 @@ public class StudentController {
     public ResponseEntity<List<Student>> getAllStudents() {
         List<Student> students = studentService.findAll();
         return ResponseEntity.ok(students);
+    }
+    
+    // 分页获取学生
+    @GetMapping("/paged")
+    public ResponseEntity<?> getAllStudentsPaged(@RequestParam(defaultValue = "0") int page,
+                                                 @RequestParam(defaultValue = "10") int size) {
+        if (page < 0 || size <= 0) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("message", "分页参数不合法");
+            return ResponseEntity.badRequest().body(error);
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Student> paged = studentService.findAllPaged(pageable);
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("content", paged.getContent());
+        resp.put("totalElements", paged.getTotalElements());
+        resp.put("totalPages", paged.getTotalPages());
+        resp.put("page", paged.getNumber());
+        resp.put("size", paged.getSize());
+        return ResponseEntity.ok(resp);
     }
 
     // 根据ID获取学生

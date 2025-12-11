@@ -136,6 +136,11 @@ class StudentAPI {
     static delete(id) {
         return API.delete(`/students/${id}`);
     }
+
+    // 分页获取学生
+    static getPaged(page = 0, size = 10) {
+        return API.get(`/students/paged?page=${page}&size=${size}`);
+    }
 }
 
 // 角色API
@@ -164,6 +169,11 @@ class RoleAPI {
     static delete(id) {
         return API.delete(`/roles/${id}`);
     }
+
+    // 分页获取角色
+    static getPaged(page = 0, size = 10) {
+        return API.get(`/roles/paged?page=${page}&size=${size}`);
+    }
 }
 
 // 用户API
@@ -171,6 +181,16 @@ class UserAPI {
     // 获取所有用户
     static getAll() {
         return API.get('/users');
+    }
+
+    // 分页获取用户
+    static getPaged(page = 0, size = 10) {
+        return API.get(`/users/paged?page=${page}&size=${size}`);
+    }
+
+    // 根据角色分页获取用户
+    static getByRolePaged(roleId, page = 0, size = 10) {
+        return API.get(`/users/role/${roleId}/paged?page=${page}&size=${size}`);
     }
 
     // 根据ID获取用户
@@ -214,6 +234,11 @@ class CourseAPI {
     // 根据ID获取课程
     static getById(id) {
         return API.get(`/courses/${id}`);
+    }
+
+    // 分页获取课程
+    static getPaged(page = 0, size = 10) {
+        return API.get(`/courses/paged?page=${page}&size=${size}`);
     }
 
     // 创建课程
@@ -318,6 +343,17 @@ class AttendanceRecordAPI {
     // 获取当前登录学生的考勤记录（包含缺勤补齐）
     static getMyRecordsFull() {
         return API.get('/attendance-records/my/full');
+    }
+}
+
+// 管理员查看学生选课
+class AdminCourseViewAPI {
+    static getStudentCoursesByStudentId(studentId) {
+        return API.get(`/student-course-classes/student/${studentId}/courses`);
+    }
+    
+    static getStudentByNumber(studentNumber) {
+        return StudentAPI.getByNumber(studentNumber);
     }
 }
 

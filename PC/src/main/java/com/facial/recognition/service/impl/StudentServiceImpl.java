@@ -1,7 +1,6 @@
 package com.facial.recognition.service.impl;
 
 import com.facial.recognition.pojo.Student;
-import com.facial.recognition.pojo.User;
 import com.facial.recognition.repository.StudentRepository;
 import com.facial.recognition.repository.StudentCourseClassRepository;
 import com.facial.recognition.repository.UserRepository;
@@ -10,10 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import com.facial.recognition.pojo.StudentCourseClass;
 
 @Service
 @Transactional
@@ -64,6 +61,12 @@ public class StudentServiceImpl implements StudentService {
     @Transactional(readOnly = true)
     public List<Student> findAll() {
         return studentRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<Student> findAllPaged(org.springframework.data.domain.Pageable pageable) {
+        return studentRepository.findAll(pageable);
     }
 
     @Override

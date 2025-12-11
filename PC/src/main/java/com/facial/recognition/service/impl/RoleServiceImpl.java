@@ -62,6 +62,12 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<Role> findAllPaged(org.springframework.data.domain.Pageable pageable) {
+        return roleRepository.findAll(pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Role> findByDescriptionContaining(String description) {
         return roleRepository.findByDescriptionContaining(description);
     }

@@ -22,9 +22,13 @@ public interface IUserService {
     
     // 根据角色ID获取用户列表
     List<User> findByRoleId(Integer roleId);
+    org.springframework.data.domain.Page<User> findByRoleIdPaged(Integer roleId, org.springframework.data.domain.Pageable pageable);
     
     // 保存用户（新增或更新）
     User save(User user);
+
+    // 分页获取用户
+    org.springframework.data.domain.Page<User> findAllPaged(org.springframework.data.domain.Pageable pageable);
     
     // 删除用户
     void delete(Integer id);

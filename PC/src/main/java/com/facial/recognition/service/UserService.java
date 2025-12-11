@@ -63,7 +63,15 @@ public class UserService implements IUserService {
 
     @Override
     public List<User> findAll() {
-        return userRepository.findAll();
+        // 管理员置顶，其余按创建时间倒序
+        return userRepository.findAllOrdered();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<User> findAllPaged(org.springframework.data.domain.Pageable pageable) {
+        // 管理员置顶，其余按创建时间倒序
+        return userRepository.findAllOrdered(pageable);
     }
 
     @Override
@@ -86,6 +94,12 @@ public class UserService implements IUserService {
     @Override
     public List<User> findByRoleId(Integer roleId) {
         return userRepository.findByRoleId(roleId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<User> findByRoleIdPaged(Integer roleId, org.springframework.data.domain.Pageable pageable) {
+        return userRepository.findByRoleId(roleId, pageable);
     }
 
     @Override

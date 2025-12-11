@@ -30,6 +30,9 @@ public interface RoleService {
     
     // 根据描述模糊查询
     List<Role> findByDescriptionContaining(String description);
+
+    // 分页查询
+    org.springframework.data.domain.Page<Role> findAllPaged(org.springframework.data.domain.Pageable pageable);
     
     // 更新角色信息
     Role updateRole(Integer roleId, Role role);

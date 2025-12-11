@@ -551,8 +551,16 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="card">
                             <div class="card-header">
                                 <div class="card-title">课程信息管理</div>
-                                <button class="btn btn-accent" onclick="addCourse()">添加课程</button>
-                                <button class="btn" onclick="loadCourses()">刷新</button>
+                                <div class="card-actions">
+                                    <button class="btn btn-accent" onclick="addCourse()">添加课程</button>
+                                    <select id="course-page-size" onchange="coursePageState && (coursePageState.page=0, coursePageState.size=parseInt(this.value,10)||10); loadCourses();" style="width: 100px; margin-right: 8px;">
+                                        <option value="10">10</option>
+                                        <option value="15">15</option>
+                                        <option value="20">20</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                    <button class="btn" onclick="loadCourses()">刷新</button>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="table-container">
@@ -572,6 +580,11 @@ document.addEventListener('DOMContentLoaded', function () {
                                             </tr>
                                         </tbody>
                                     </table>
+                                </div>
+                                <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:10px;gap:8px;">
+                                    <button class="btn" id="course-page-prev" onclick="coursePageState.page=Math.max(0,coursePageState.page-1);loadCourses();">上一页</button>
+                                    <span>第 <span id="course-page-current">1</span> / <span id="course-page-total">1</span> 页</span>
+                                    <button class="btn" id="course-page-next" onclick="coursePageState.page=Math.min(coursePageState.totalPages-1,coursePageState.page+1);loadCourses();">下一页</button>
                                 </div>
                             </div>
                         </div>
@@ -605,8 +618,16 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="card">
                             <div class="card-header">
                                 <div class="card-title">教师信息管理</div>
-                                <button class="btn btn-accent" onclick="addTeacher()">添加教师</button>
-                                <button class="btn" onclick="loadTeachers()">刷新</button>
+                                <div class="card-actions">
+                                    <button class="btn btn-accent" onclick="addTeacher()">添加教师</button>
+                                    <select id="teacher-page-size" onchange="teacherPageState && (teacherPageState.page=0, teacherPageState.size=parseInt(this.value,10)||10); loadTeachers();" style="width: 100px; margin-right: 8px;">
+                                        <option value="10">10</option>
+                   	                 <option value="15">15</option>
+                   	                 <option value="20">20</option>
+                   	                 <option value="50">50</option>
+                                    </select>
+                                    <button class="btn" onclick="loadTeachers()">刷新</button>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="table-container">
@@ -626,6 +647,11 @@ document.addEventListener('DOMContentLoaded', function () {
                                             </tr>
                                         </tbody>
                                     </table>
+                                </div>
+                                <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:10px;gap:8px;">
+                                    <button class="btn" id="teacher-page-prev" onclick="teacherPageState.page=Math.max(0,teacherPageState.page-1);loadTeachers();">上一页</button>
+                                    <span>第 <span id="teacher-page-current">1</span> / <span id="teacher-page-total">1</span> 页</span>
+                                    <button class="btn" id="teacher-page-next" onclick="teacherPageState.page=Math.min(teacherPageState.totalPages-1,teacherPageState.page+1);loadTeachers();">下一页</button>
                                 </div>
                             </div>
                         </div>
@@ -659,8 +685,16 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="card">
                             <div class="card-header">
                                 <div class="card-title">学生信息管理</div>
-                                <button class="btn btn-accent" onclick="addStudent()">添加学生</button>
-                                <button class="btn" onclick="loadStudents()">刷新</button>
+                                <div class="card-actions">
+                                    <button class="btn btn-accent" onclick="addStudent()">添加学生</button>
+                                    <select id="student-page-size" onchange="studentPageState && (studentPageState.page=0, studentPageState.size=parseInt(this.value,10)||10); loadStudents();" style="width: 100px; margin-right: 8px;">
+                                        <option value="10">10</option>
+                                        <option value="15">15</option>
+                                        <option value="20">20</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                    <button class="btn" onclick="loadStudents()">刷新</button>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="table-container">
@@ -680,6 +714,11 @@ document.addEventListener('DOMContentLoaded', function () {
                                         </tbody>
                                     </table>
                                 </div>
+                                <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:10px;gap:8px;">
+                                    <button class="btn" id="student-page-prev" onclick="studentPageState.page=Math.max(0,studentPageState.page-1);loadStudents();">上一页</button>
+                                    <span>第 <span id="student-page-current">1</span> / <span id="student-page-total">1</span> 页</span>
+                                    <button class="btn" id="student-page-next" onclick="studentPageState.page=Math.min(studentPageState.totalPages-1,studentPageState.page+1);loadStudents();">下一页</button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -691,8 +730,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="card">
                         <div class="card-header">
                             <div class="card-title">用户信息管理</div>
-                            <button class="btn btn-accent" onclick="addUser()">添加用户</button>
-                            <button class="btn" onclick="loadUsersTable()">刷新</button>
+                            <div class="card-actions">
+                                <button class="btn btn-accent" onclick="addUser()">添加用户</button>
+                                <select id="user-page-size" onchange="userPageState && (userPageState.page=0); loadUsersTable();" style="width: 120px; margin-right: 8px;">
+                                    <option value="10">10</option>
+                                    <option value="15">15</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                </select>
+                                <button class="btn" onclick="loadUsersTable()">刷新</button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-container">
@@ -716,6 +763,11 @@ document.addEventListener('DOMContentLoaded', function () {
                                     </tbody>
                                 </table>
                             </div>
+                            <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:10px;gap:8px;">
+                                <button class="btn" id="user-page-prev" onclick="userPageState.page=Math.max(0,userPageState.page-1);loadUsersTable();">上一页</button>
+                                <span>第 <span id="user-page-current">1</span> / <span id="user-page-total">1</span> 页</span>
+                                <button class="btn" id="user-page-next" onclick="userPageState.page=Math.min(userPageState.totalPages-1,userPageState.page+1);loadUsersTable();">下一页</button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -726,8 +778,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="card">
                         <div class="card-header">
                             <div class="card-title">角色信息管理</div>
-                            <button class="btn btn-accent" onclick="addRole()">添加角色</button>
-                            <button class="btn" onclick="loadRolesTable()">刷新</button>
+                            <div class="card-actions">
+                                <button class="btn btn-accent" onclick="addRole()">添加角色</button>
+                                <select id="role-page-size" onchange="rolePageState && (rolePageState.page=0, rolePageState.size=parseInt(this.value,10)||10); loadRolesTable();" style="width: 120px; margin-right: 8px;">
+                                    <option value="10">10</option>
+                                    <option value="15">15</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                </select>
+                                <button class="btn" onclick="loadRolesTable()">刷新</button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-container">
@@ -748,10 +808,69 @@ document.addEventListener('DOMContentLoaded', function () {
                                     </tbody>
                                 </table>
                             </div>
+                            <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:10px;gap:8px;">
+                                <button class="btn" id="role-page-prev" onclick="rolePageState.page=Math.max(0,rolePageState.page-1);loadRolesTable();">上一页</button>
+                                <span>第 <span id="role-page-current">1</span> / <span id="role-page-total">1</span> 页</span>
+                                <button class="btn" id="role-page-next" onclick="rolePageState.page=Math.min(rolePageState.totalPages-1,rolePageState.page+1);loadRolesTable();">下一页</button>
+                            </div>
                         </div>
                     </div>
                 `;
                 setTimeout(loadRolesTable, 100);
+                break;
+            case 'admin-student-courses':
+                content = `
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">学生选课查看（管理员）</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-row" style="gap: 12px; margin-bottom: 12px;">
+                                <div class="form-group">
+                                    <label>学号</label>
+                                    <input id="admin-course-query-number" type="text" placeholder="输入学号" />
+                                </div>
+                                <div class="form-group">
+                                    <label>学生ID</label>
+                                    <input id="admin-course-query-studentid" type="number" placeholder="可选，直接用学生ID" />
+                                </div>
+                                <div class="form-group" style="align-self: flex-end;">
+                                    <button class="btn btn-accent" id="admin-course-query-btn">查询</button>
+                                </div>
+                                <div class="form-group" style="align-self: flex-end;">
+                                     <button class="btn" id="admin-course-query-all-btn">加载全部</button>
+                                </div>
+                            </div>
+                            <div class="form-row" style="gap: 12px; margin-bottom: 12px;">
+                                <div class="form-group">
+                                    <label>每页条数</label>
+                                    <select id="admin-course-page-size" style="width: 100px;">
+                                        <option value="10">10</option>
+                                        <option value="15">15</option>
+                                        <option value="20">20</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="admin-course-query-result">
+                                <div style="text-align:center;color:#888;padding:20px;">请输入学号或学生ID后查询</div>
+                            </div>
+                            <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:10px;gap:8px;">
+                                <button class="btn" id="admin-course-page-prev" onclick="adminCourseViewState.page=Math.max(0,adminCourseViewState.page-1);renderAdminCourseViewTable();">上一页</button>
+                                <span>第 <span id="admin-course-page-current">1</span> / <span id="admin-course-page-total">1</span> 页</span>
+                                <button class="btn" id="admin-course-page-next" onclick="adminCourseViewState.page=Math.min(adminCourseViewState.totalPages-1,adminCourseViewState.page+1);renderAdminCourseViewTable();">下一页</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                setTimeout(() => {
+                    document.getElementById('admin-course-query-btn')?.addEventListener('click', adminQueryStudentCourses);
+                    document.getElementById('admin-course-query-all-btn')?.addEventListener('click', loadAdminStudentCoursesAll);
+                    document.getElementById('admin-course-page-size')?.addEventListener('change', () => {
+                        adminCourseViewState.page = 0;
+                        renderAdminCourseViewTable();
+                    });
+                }, 50);
                 break;
             case 'publish-task':
                 content = `
@@ -1189,21 +1308,38 @@ function editMyStudentInfo(studentId) {
     });
 }
 
-// 加载所有学生
+let studentPageState = { page: 0, size: 10, totalPages: 1 };
+
+// 加载所有学生（分页）
 async function loadStudents() {
     const tbody = document.getElementById('student-table-body');
     if (!tbody) return;
-    
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">加载中...</td></tr>';
-    
+
+    const pageSelect = document.getElementById('student-page-size');
+    const currentPageSpan = document.getElementById('student-page-current');
+    const totalPageSpan = document.getElementById('student-page-total');
+    const btnPrev = document.getElementById('student-page-prev');
+    const btnNext = document.getElementById('student-page-next');
+
+    if (pageSelect) {
+        studentPageState.size = parseInt(pageSelect.value, 10) || 10;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">加载中...</td></tr>';
+
     try {
-        const students = await StudentAPI.getAll();
-        
-        if (students.length === 0) {
+        const resp = await StudentAPI.getPaged(studentPageState.page, studentPageState.size);
+        const students = resp.content || [];
+        studentPageState.totalPages = resp.totalPages || 1;
+        studentPageState.page = resp.page || 0;
+
+        if (!students || students.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">暂无学生数据</td></tr>';
+            currentPageSpan && (currentPageSpan.textContent = studentPageState.page + 1);
+            totalPageSpan && (totalPageSpan.textContent = studentPageState.totalPages);
             return;
         }
-        
+
         tbody.innerHTML = students.map(student => `
             <tr>
                 <td>${student.studentNumber || '-'}</td>
@@ -1217,6 +1353,11 @@ async function loadStudents() {
                 </td>
             </tr>
         `).join('');
+
+        if (currentPageSpan) currentPageSpan.textContent = studentPageState.page + 1;
+        if (totalPageSpan) totalPageSpan.textContent = studentPageState.totalPages;
+        if (btnPrev) btnPrev.disabled = studentPageState.page <= 0;
+        if (btnNext) btnNext.disabled = studentPageState.page >= studentPageState.totalPages - 1;
     } catch (error) {
         console.error('加载学生失败:', error);
         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">加载失败，请检查后端服务</td></tr>';
@@ -1421,14 +1562,32 @@ async function loadTeachers() {
     var tbody = document.getElementById('teacher-table-body');
     if (!tbody) return;
     
+    const pageSelect = document.getElementById('teacher-page-size');
+    const currentPageSpan = document.getElementById('teacher-page-current');
+    const totalPageSpan = document.getElementById('teacher-page-total');
+    const btnPrev = document.getElementById('teacher-page-prev');
+    const btnNext = document.getElementById('teacher-page-next');
+
+    if (!window.teacherPageState) {
+        window.teacherPageState = { page: 0, size: 10, totalPages: 1 };
+    }
+    if (pageSelect) {
+        window.teacherPageState.size = parseInt(pageSelect.value, 10) || 10;
+    }
+
     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">加载中...</td></tr>';
     
     try {
         // 角色ID 2 = 教师
-        var teachers = await API.get('/users/role/2');
-        
+        var resp = await UserAPI.getByRolePaged(2, window.teacherPageState.page, window.teacherPageState.size);
+        var teachers = resp.content || [];
+        window.teacherPageState.totalPages = resp.totalPages || 1;
+        window.teacherPageState.page = resp.page || 0;
+
         if (teachers.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无教师数据</td></tr>';
+            currentPageSpan && (currentPageSpan.textContent = window.teacherPageState.page + 1);
+            totalPageSpan && (totalPageSpan.textContent = window.teacherPageState.totalPages);
             return;
         }
         
@@ -1444,6 +1603,11 @@ async function loadTeachers() {
                 '</div></td>' +
             '</tr>';
         }).join('');
+
+        if (currentPageSpan) currentPageSpan.textContent = window.teacherPageState.page + 1;
+        if (totalPageSpan) totalPageSpan.textContent = window.teacherPageState.totalPages;
+        if (btnPrev) btnPrev.disabled = window.teacherPageState.page <= 0;
+        if (btnNext) btnNext.disabled = window.teacherPageState.page >= window.teacherPageState.totalPages - 1;
     } catch (error) {
         console.error('加载教师失败:', error);
         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">加载失败</td></tr>';
@@ -1451,6 +1615,9 @@ async function loadTeachers() {
 }
 
 // ========== 课程管理功能 ==========
+
+// 分页状态
+let coursePageState = { page: 0, size: 10, totalPages: 1 };
 
 // 加载教师自己的课程
 async function loadMyCourses() {
@@ -1496,22 +1663,38 @@ async function loadMyCourses() {
     }
 }
 
-// 加载所有课程（管理员和学生用）
+// 加载所有课程（管理员和学生用，分页）
 async function loadCourses() {
     var tbody = document.getElementById('course-table-body');
     if (!tbody) return;
     
     var currentUser = getCurrentUser();
     var isStudent = currentUser && currentUser.roleId === 3;
+    var isAdmin = currentUser && currentUser.roleId === 1;
     var colSpan = isStudent ? 4 : 5;
-    
+
+    const pageSelect = document.getElementById('course-page-size');
+    const currentPageSpan = document.getElementById('course-page-current');
+    const totalPageSpan = document.getElementById('course-page-total');
+    const btnPrev = document.getElementById('course-page-prev');
+    const btnNext = document.getElementById('course-page-next');
+
+    if (pageSelect) {
+        coursePageState.size = parseInt(pageSelect.value, 10) || 10;
+    }
+
     tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center;">加载中...</td></tr>`;
     
     try {
-        var courses = await API.get('/courses');
+        var resp = await CourseAPI.getPaged(coursePageState.page, coursePageState.size);
+        var courses = resp.content || [];
+        coursePageState.totalPages = resp.totalPages || 1;
+        coursePageState.page = resp.page || 0;
         
         if (courses.length === 0) {
             tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center;">暂无课程数据</td></tr>`;
+            currentPageSpan && (currentPageSpan.textContent = coursePageState.page + 1);
+            totalPageSpan && (totalPageSpan.textContent = coursePageState.totalPages);
             return;
         }
         
@@ -1522,7 +1705,7 @@ async function loadCourses() {
                 '<td>' + (course.credits || '-') + '</td>' +
                 '<td>' + (course.semester || '-') + '</td>';
             
-            if (!isStudent) {
+            if (!isStudent && isAdmin) {
                 row += '<td><div class="btn-group">' +
                     '<button class="btn" onclick="editCourse(' + course.courseId + ')">编辑</button>' +
                     '<button class="btn btn-danger" onclick="deleteCourse(' + course.courseId + ')">删除</button>' +
@@ -1532,6 +1715,11 @@ async function loadCourses() {
             row += '</tr>';
             return row;
         }).join('');
+
+        if (currentPageSpan) currentPageSpan.textContent = coursePageState.page + 1;
+        if (totalPageSpan) totalPageSpan.textContent = coursePageState.totalPages;
+        if (btnPrev) btnPrev.disabled = coursePageState.page <= 0;
+        if (btnNext) btnNext.disabled = coursePageState.page >= coursePageState.totalPages - 1;
     } catch (error) {
         console.error('加载课程失败:', error);
         tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center; color: red;">加载失败</td></tr>`;
@@ -1545,18 +1733,33 @@ async function loadUsersTable() {
     const tbody = document.getElementById('user-table-body');
     if (!tbody) return;
     
+    const pageSelect = document.getElementById('user-page-size');
+    const currentPageSpan = document.getElementById('user-page-current');
+    const totalPageSpan = document.getElementById('user-page-total');
+    const btnPrev = document.getElementById('user-page-prev');
+    const btnNext = document.getElementById('user-page-next');
+
+    if (!window.userPageState) {
+        window.userPageState = { page: 0, size: 10, totalPages: 1 };
+    }
+    if (pageSelect) {
+        window.userPageState.size = parseInt(pageSelect.value, 10) || 10;
+    }
+
     tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">加载中...</td></tr>';
     
     try {
-        const users = await UserAPI.getAll();
-        
+        const resp = await UserAPI.getPaged(window.userPageState.page, window.userPageState.size);
+        const users = resp.content || [];
+        window.userPageState.totalPages = resp.totalPages || 1;
+        window.userPageState.page = resp.page || 0;
+
         if (users.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">暂无用户数据</td></tr>';
+            currentPageSpan && (currentPageSpan.textContent = window.userPageState.page + 1);
+            totalPageSpan && (totalPageSpan.textContent = window.userPageState.totalPages);
             return;
         }
-        
-        // 按用户ID排序
-        users.sort((a, b) => a.userId - b.userId);
         
         tbody.innerHTML = users.map(user => `
             <tr>
@@ -1575,6 +1778,11 @@ async function loadUsersTable() {
                 </td>
             </tr>
         `).join('');
+
+        if (currentPageSpan) currentPageSpan.textContent = window.userPageState.page + 1;
+        if (totalPageSpan) totalPageSpan.textContent = window.userPageState.totalPages;
+        if (btnPrev) btnPrev.disabled = window.userPageState.page <= 0;
+        if (btnNext) btnNext.disabled = window.userPageState.page >= window.userPageState.totalPages - 1;
     } catch (error) {
         console.error('加载用户失败:', error);
         tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: red;">加载失败，请检查后端服务</td></tr>';
@@ -1709,13 +1917,31 @@ async function loadRolesTable() {
     const tbody = document.getElementById('role-table-body');
     if (!tbody) return;
     
+    const pageSelect = document.getElementById('role-page-size');
+    const currentPageSpan = document.getElementById('role-page-current');
+    const totalPageSpan = document.getElementById('role-page-total');
+    const btnPrev = document.getElementById('role-page-prev');
+    const btnNext = document.getElementById('role-page-next');
+
+    if (!window.rolePageState) {
+        window.rolePageState = { page: 0, size: 10, totalPages: 1 };
+    }
+    if (pageSelect) {
+        window.rolePageState.size = parseInt(pageSelect.value, 10) || 10;
+    }
+
     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">加载中...</td></tr>';
     
     try {
-        const roles = await RoleAPI.getAll();
+        const resp = await RoleAPI.getPaged(window.rolePageState.page, window.rolePageState.size);
+        const roles = resp.content || [];
+        window.rolePageState.totalPages = resp.totalPages || 1;
+        window.rolePageState.page = resp.page || 0;
         
         if (roles.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无角色数据</td></tr>';
+            currentPageSpan && (currentPageSpan.textContent = window.rolePageState.page + 1);
+            totalPageSpan && (totalPageSpan.textContent = window.rolePageState.totalPages);
             return;
         }
         
@@ -1734,6 +1960,11 @@ async function loadRolesTable() {
                 </td>
             </tr>
         `).join('');
+
+        if (currentPageSpan) currentPageSpan.textContent = window.rolePageState.page + 1;
+        if (totalPageSpan) totalPageSpan.textContent = window.rolePageState.totalPages;
+        if (btnPrev) btnPrev.disabled = window.rolePageState.page <= 0;
+        if (btnNext) btnNext.disabled = window.rolePageState.page >= window.rolePageState.totalPages - 1;
     } catch (error) {
         console.error('加载角色失败:', error);
         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">加载失败，请检查后端服务</td></tr>';
@@ -3163,18 +3394,35 @@ function loadTabData(tabId) {
     }
 }
 
+// 管理员测试专用学生ID（用于选课/考勤页面调试）
+const ADMIN_TEST_STUDENT_ID = 1;
+
 // 加载可选课程
 async function loadAvailableCourses() {
     const container = document.getElementById('available-courses-list');
     if (!container) return;
-    
+
+    const currentUser = getCurrentUser();
+    const isStudent = currentUser && currentUser.roleId === 3;
+    const isAdmin = currentUser && currentUser.roleId === 1;
+
+    if (!isStudent && !isAdmin) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger-color);">仅学生/管理员测试可访问</div>';
+        showToast('仅学生/管理员测试可访问', 'warning');
+        return;
+    }
+
     container.innerHTML = '<div class="loading">正在加载...</div>';
 
-    const studentId = await getCurrentStudentId();
+    const studentId = isAdmin ? ADMIN_TEST_STUDENT_ID : await getCurrentStudentId();
     if (!studentId) {
         container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">无法获取当前学生信息，无法加载可选课程</div>';
         showToast('无法获取当前学生信息', 'error');
         return;
+    }
+
+    if (isAdmin) {
+        container.innerHTML = '<div style="margin-bottom:10px;color:#6B7280;">管理员测试模式：使用学生ID ' + studentId + '</div>' + container.innerHTML;
     }
     
     StudentCourseAPI.getAvailableCourses(studentId)
@@ -3247,14 +3495,28 @@ async function loadAvailableCourses() {
 async function loadStudentSelectedCourses() {
     const container = document.getElementById('my-courses-list');
     if (!container) return;
-    
+
+    const currentUser = getCurrentUser();
+    const isStudent = currentUser && currentUser.roleId === 3;
+    const isAdmin = currentUser && currentUser.roleId === 1;
+
+    if (!isStudent && !isAdmin) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger-color);">仅学生/管理员测试可访问</div>';
+        showToast('仅学生/管理员测试可访问', 'warning');
+        return;
+    }
+
     container.innerHTML = '<div class="loading">正在加载...</div>';
 
-    const studentId = await getCurrentStudentId();
+    const studentId = isAdmin ? ADMIN_TEST_STUDENT_ID : await getCurrentStudentId();
     if (!studentId) {
         container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">无法获取当前学生信息，无法加载已选课程</div>';
         showToast('无法获取当前学生信息', 'error');
         return;
+    }
+
+    if (isAdmin) {
+        container.innerHTML = '<div style="margin-bottom:10px;color:#6B7280;">管理员测试模式：使用学生ID ' + studentId + '</div>' + container.innerHTML;
     }
 
     // 调用后端API获取已选课程
@@ -3392,6 +3654,203 @@ function getStatusText(status) {
         case 'COMPLETED': return '已完成';
         default: return status;
     }
+}
+
+// 管理员查询学生选课
+async function adminQueryStudentCourses() {
+    const numberInput = document.getElementById('admin-course-query-number');
+    const idInput = document.getElementById('admin-course-query-studentid');
+    const resultDiv = document.getElementById('admin-course-query-result');
+
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.roleId !== 1) {
+        resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger-color);">仅管理员可用</div>';
+        showToast('仅管理员可用', 'warning');
+        return;
+    }
+
+    const studentNumber = numberInput?.value?.trim();
+    const studentIdInput = idInput?.value ? parseInt(idInput.value, 10) : null;
+
+    resultDiv.innerHTML = '<div style="text-align:center;padding:20px;">查询中...</div>';
+
+    try {
+        let studentId = studentIdInput;
+        let studentInfo = null;
+
+        if (!studentId) {
+            if (!studentNumber) {
+                resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger-color);">请先输入学号或学生ID</div>';
+                return;
+            }
+            studentInfo = await AdminCourseViewAPI.getStudentByNumber(studentNumber);
+            studentId = studentInfo?.studentId;
+            if (!studentId) {
+                resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger-color);">未找到该学号的学生</div>';
+                return;
+            }
+        } else {
+            // 如果提供ID但未提供学号，尝试补全学号/姓名（忽略失败）
+            if (studentNumber) {
+                studentInfo = await AdminCourseViewAPI.getStudentByNumber(studentNumber).catch(() => null);
+            }
+        }
+
+        const courses = await AdminCourseViewAPI.getStudentCoursesByStudentId(studentId);
+        const rows = [];
+        const infoName = studentInfo?.studentName || studentInfo?.name || '未知';
+        const infoNumber = studentInfo?.studentNumber || studentNumber || '未知';
+
+        if (!courses || courses.length === 0) {
+            rows.push({
+                studentNumber: infoNumber,
+                studentName: infoName,
+                courseName: '-',
+                courseCode: '-',
+                className: '-'
+            });
+        } else {
+            courses.forEach(c => {
+                rows.push({
+                    studentNumber: infoNumber,
+                    studentName: infoName,
+                    courseName: c.courseName || '-',
+                    courseCode: c.courseCode || '-',
+                    className: c.className || '-'
+                });
+            });
+        }
+
+        adminCourseViewState.rows = rows;
+        adminCourseViewState.page = 0;
+        renderAdminCourseViewTable();
+    } catch (err) {
+        console.error('管理员查询学生选课失败:', err);
+        resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger-color);">查询失败：' + (err.message || '未知错误') + '</div>';
+    }
+}
+
+// 管理员加载全部学生选课（按学生合并展示）
+async function loadAdminStudentCoursesAll() {
+    const resultDiv = document.getElementById('admin-course-query-result');
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.roleId !== 1) {
+        resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger-color);">仅管理员可用</div>';
+        showToast('仅管理员可用', 'warning');
+        return;
+    }
+
+    resultDiv.innerHTML = '<div style="text-align:center;padding:20px;">加载全部学生选课...</div>';
+
+    try {
+        const students = await StudentAPI.getAll();
+        if (!students || students.length === 0) {
+            resultDiv.innerHTML = '<div style="text-align:center;padding:20px;">暂无学生数据</div>';
+            return;
+        }
+
+        // 按学生并发获取选课
+        const list = await Promise.all(students.map(async s => {
+            try {
+                const courses = await AdminCourseViewAPI.getStudentCoursesByStudentId(s.studentId);
+                return { student: s, courses: courses || [] };
+            } catch (e) {
+                return { student: s, courses: [], error: true };
+            }
+        }));
+
+        const rows = [];
+        list.forEach(item => {
+            if (!item.courses || item.courses.length === 0) {
+                rows.push({
+                    studentNumber: item.student.studentNumber || '-',
+                    studentName: item.student.studentName || '-',
+                    courseName: '-',
+                    courseCode: '-',
+                    className: '-'
+                });
+            } else {
+                item.courses.forEach(c => {
+                    rows.push({
+                        studentNumber: item.student.studentNumber || '-',
+                        studentName: item.student.studentName || '-',
+                        courseName: c.courseName || '-',
+                        courseCode: c.courseCode || '-',
+                        className: c.className || '-'
+                    });
+                });
+            }
+        });
+
+        adminCourseViewState.rows = rows;
+        adminCourseViewState.page = 0;
+        renderAdminCourseViewTable();
+    } catch (err) {
+        console.error('管理员加载全部学生选课失败:', err);
+        resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger-color);">加载失败：' + (err.message || '未知错误') + '</div>';
+    }
+}
+
+// 学生选课查看（管理员）分页状态
+let adminCourseViewState = { rows: [], page: 0, size: 10, totalPages: 1 };
+
+function renderAdminCourseViewTable() {
+    const resultDiv = document.getElementById('admin-course-query-result');
+    if (!resultDiv) return;
+    const pageSelect = document.getElementById('admin-course-page-size');
+    const currentPageSpan = document.getElementById('admin-course-page-current');
+    const totalPageSpan = document.getElementById('admin-course-page-total');
+    const btnPrev = document.getElementById('admin-course-page-prev');
+    const btnNext = document.getElementById('admin-course-page-next');
+
+    if (pageSelect) {
+        adminCourseViewState.size = parseInt(pageSelect.value, 10) || 10;
+    }
+
+    const rows = adminCourseViewState.rows || [];
+    adminCourseViewState.totalPages = Math.max(1, Math.ceil(rows.length / adminCourseViewState.size));
+    if (adminCourseViewState.page >= adminCourseViewState.totalPages) {
+        adminCourseViewState.page = adminCourseViewState.totalPages - 1;
+    }
+    const start = adminCourseViewState.page * adminCourseViewState.size;
+    const end = start + adminCourseViewState.size;
+    const slice = rows.slice(start, end);
+
+    if (!rows.length) {
+        resultDiv.innerHTML = '<div style="text-align:center;padding:20px;">暂无选课记录</div>';
+    } else {
+        resultDiv.innerHTML = `
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>课程名称</th>
+                            <th>课程代码</th>
+                            <th>班级</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${slice.map(r => `
+                            <tr>
+                                <td>${r.studentNumber}</td>
+                                <td>${r.studentName}</td>
+                                <td>${r.courseName}</td>
+                                <td>${r.courseCode}</td>
+                                <td>${r.className}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    if (currentPageSpan) currentPageSpan.textContent = adminCourseViewState.page + 1;
+    if (totalPageSpan) totalPageSpan.textContent = adminCourseViewState.totalPages;
+    if (btnPrev) btnPrev.disabled = adminCourseViewState.page <= 0;
+    if (btnNext) btnNext.disabled = adminCourseViewState.page >= adminCourseViewState.totalPages - 1;
 }
 
 // ========== 考勤统计功能 ==========
