@@ -1,5 +1,6 @@
 package com.facial.recognition.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
@@ -12,8 +13,13 @@ public class AttendanceTask {
     @Column(name = "TaskID")
     private Long taskId;
 
-    @Column(name = "ClassID", nullable = false)
+    @Column(name = "ClassID", nullable = false, insertable = false, updatable = false)
     private Long courseClassId;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ClassID", referencedColumnName = "ClassID")
+    private CourseClass courseClass;
 
     // 数据库中 AttendanceTask 表没有 TeacherID，这里先注释掉或设为Transient
     // 实际业务中可以通过 ClassID -> CourseClass -> TeacherID 获取
@@ -99,4 +105,7 @@ public class AttendanceTask {
 
     public String getQrCode() { return qrCode; }
     public void setQrCode(String qrCode) { this.qrCode = qrCode; }
+
+    public CourseClass getCourseClass() { return courseClass; }
+    public void setCourseClass(CourseClass courseClass) { this.courseClass = courseClass; }
 }

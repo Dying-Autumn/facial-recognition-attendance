@@ -398,6 +398,48 @@ function applyMenuPermissions() {
     });
 }
 
+// 加载仪表板数据
+async function loadDashboardData() {
+    try {
+        // 加载统计数据
+        const stats = await DashboardAPI.getStatistics();
+        document.getElementById('stat-student-count').textContent = stats.studentCount || 0;
+        document.getElementById('stat-teacher-count').textContent = stats.teacherCount || 0;
+        document.getElementById('stat-course-count').textContent = stats.courseCount || 0;
+        document.getElementById('stat-attendance-rate').textContent = stats.todayAttendanceRate || '0.0%';
+    } catch (error) {
+        console.error('加载统计数据失败:', error);
+        document.getElementById('stat-student-count').textContent = '-';
+        document.getElementById('stat-teacher-count').textContent = '-';
+        document.getElementById('stat-course-count').textContent = '-';
+        document.getElementById('stat-attendance-rate').textContent = '-';
+    }
+
+    try {
+        // 加载最近考勤记录
+        const records = await DashboardAPI.getRecentRecords();
+        const tbody = document.getElementById('recent-records-tbody');
+        
+        if (records && records.length > 0) {
+            tbody.innerHTML = records.map(record => `
+                <tr>
+                    <td>${record.courseName || '-'}</td>
+                    <td>${record.className || '-'}</td>
+                    <td>${record.time || '-'}</td>
+                    <td>${record.total || 0}/${record.attended || 0}</td>
+                    <td>${record.rate || '0.0%'}</td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无数据</td></tr>';
+        }
+    } catch (error) {
+        console.error('加载考勤记录失败:', error);
+        document.getElementById('recent-records-tbody').innerHTML = 
+            '<tr><td colspan="5" style="text-align: center;">加载失败</td></tr>';
+    }
+}
+
 // 页面切换逻辑
 document.addEventListener('DOMContentLoaded', function () {
     // 检查登录状态
@@ -412,6 +454,9 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // 初始化模态框
     Modal.init();
+    
+    // 加载仪表板数据
+    loadDashboardData();
     
     // 预加载高德地图API，提升后续地图初始化速度
     if (typeof initAMap === 'function') {

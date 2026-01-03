@@ -1,7 +1,9 @@
 package com.facial.recognition.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "CourseClass")
@@ -14,11 +16,20 @@ public class CourseClass {
     @Column(name = "ClassName", nullable = false)
     private String className; // 班级名称/代号
 
-    @Column(name = "CourseID", nullable = false)
+    @Column(name = "CourseID", nullable = false, insertable = false, updatable = false)
     private Long courseId; // 外键
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CourseID", referencedColumnName = "CourseID")
+    private Course course;
 
     @Column(name = "TeacherID", nullable = false)
     private Long teacherId; // 外键
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "classId", fetch = FetchType.LAZY)
+    private List<StudentCourseClass> studentCourseClasses;
 
     @Column(name = "ClassLocation")
     private String classroom; // 教室 (对应数据库 ClassLocation)
@@ -89,4 +100,10 @@ public class CourseClass {
 
     public String getSemester() { return semester; }
     public void setSemester(String semester) { this.semester = semester; }
+
+    public Course getCourse() { return course; }
+    public void setCourse(Course course) { this.course = course; }
+
+    public List<StudentCourseClass> getStudentCourseClasses() { return studentCourseClasses; }
+    public void setStudentCourseClasses(List<StudentCourseClass> studentCourseClasses) { this.studentCourseClasses = studentCourseClasses; }
 }

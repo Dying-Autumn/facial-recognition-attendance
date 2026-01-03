@@ -495,3 +495,16 @@ class PermissionAPI {
     }
 }
 
+// 仪表板API
+class DashboardAPI {
+    // 获取统计数据
+    static getStatistics() {
+        return API.get('/dashboard/statistics');
+    }
+
+    // 获取最近考勤记录
+    static getRecentRecords() {
+        return API.get('/dashboard/recent-records');
+    }
+}
+

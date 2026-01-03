@@ -33,3 +33,6 @@ build/
 .vscode/
 *.puml
 /PC/logs
+
+### DOC Folder ###
+DOC/
