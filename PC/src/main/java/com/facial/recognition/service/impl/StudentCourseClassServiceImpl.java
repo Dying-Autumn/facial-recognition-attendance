@@ -37,6 +37,14 @@ public class StudentCourseClassServiceImpl implements StudentCourseClassService 
             .findByStudentIdAndClassId(studentId, classId);
         
         if (existing.isPresent()) {
+            StudentCourseClass enrollment = existing.get();
+            // 如果已退课（状态为0），则重新选课（更新状态为1）
+            if (enrollment.getStatus() == 0) {
+                enrollment.setStatus(1);
+                enrollment.setEnrollmentDate(java.time.LocalDateTime.now());
+                return studentCourseClassRepository.save(enrollment);
+            }
+            // 如果状态为1，说明已经选过了
             throw new RuntimeException("Student is already enrolled in this course class");
         }
         
@@ -50,7 +58,7 @@ public class StudentCourseClassServiceImpl implements StudentCourseClassService 
             .findByStudentIdAndClassId(studentId, classId);
         
         if (enrollment.isPresent()) {
-            enrollment.get().setStatus("DROPPED");
+            enrollment.get().setStatus(0);
             return studentCourseClassRepository.save(enrollment.get());
         }
         throw new RuntimeException("Enrollment not found");
@@ -82,24 +90,24 @@ public class StudentCourseClassServiceImpl implements StudentCourseClassService 
 
     @Override
     @Transactional(readOnly = true)
-    public List<StudentCourseClass> findByStatus(String status) {
+    public List<StudentCourseClass> findByStatus(Integer status) {
         return studentCourseClassRepository.findByStatus(status);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<StudentCourseClass> findByStudentIdAndStatus(Long studentId, String status) {
+    public List<StudentCourseClass> findByStudentIdAndStatus(Long studentId, Integer status) {
         return studentCourseClassRepository.findByStudentIdAndStatus(studentId, status);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<StudentCourseClass> findByClassIdAndStatus(Long classId, String status) {
+    public List<StudentCourseClass> findByClassIdAndStatus(Long classId, Integer status) {
         return studentCourseClassRepository.findByClassIdAndStatus(classId, status);
     }
 
     @Override
-    public StudentCourseClass updateStatus(Long id, String status) {
+    public StudentCourseClass updateStatus(Long id, Integer status) {
         Optional<StudentCourseClass> enrollment = studentCourseClassRepository.findById(id);
         if (enrollment.isPresent()) {
             enrollment.get().setStatus(status);
@@ -131,7 +139,7 @@ public class StudentCourseClassServiceImpl implements StudentCourseClassService 
     public boolean isStudentEnrolled(Long studentId, Long classId) {
         Optional<StudentCourseClass> enrollment = studentCourseClassRepository
             .findByStudentIdAndClassId(studentId, classId);
-        return enrollment.isPresent() && "ENROLLED".equals(enrollment.get().getStatus());
+        return enrollment.isPresent() && Integer.valueOf(1).equals(enrollment.get().getStatus());
     }
 
     @Override
@@ -151,7 +159,7 @@ public class StudentCourseClassServiceImpl implements StudentCourseClassService 
     }
 
     @Override
-    public List<StudentCourseClass> findByCourseClassIdAndStatus(Long courseClassId, String status) {
+    public List<StudentCourseClass> findByCourseClassIdAndStatus(Long courseClassId, Integer status) {
         return studentCourseClassRepository.findByClassIdAndStatus(courseClassId, status);
     }
 
@@ -163,8 +171,8 @@ public class StudentCourseClassServiceImpl implements StudentCourseClassService 
     @Override
     @Transactional(readOnly = true)
     public List<StudentCourseDTO> getStudentCourses(Long studentId) {
-        // 查询学生选修的所有班级记录
-        List<StudentCourseClass> allEnrollments = studentCourseClassRepository.findByStudentId(studentId);
+        // 查询学生选修的所有班级记录（只查询状态为1正常的）
+        List<StudentCourseClass> allEnrollments = studentCourseClassRepository.findByStudentIdAndStatus(studentId, 1);
         
         List<StudentCourseDTO> result = new ArrayList<>();
         

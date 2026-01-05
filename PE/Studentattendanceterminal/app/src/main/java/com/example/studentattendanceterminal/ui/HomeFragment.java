@@ -288,9 +288,6 @@ public class HomeFragment extends Fragment {
         if (tvLocation != null) {
             tvLocation.setText("定位：" + currentLat + ", " + currentLon);
         }
-        
-        // 显示经纬度信息对话框
-        showLocationDialog(currentLat, currentLon, amapLocation);
     }
 
     private boolean hasAllPermissions() {
@@ -346,9 +343,26 @@ public class HomeFragment extends Fragment {
         // 使用高德地图定位SDK进行定位
         if (mLocationClient != null) {
             try {
+                // 每次签到都强制重新定位，不使用缓存
+                // 先停止之前的定位
+                mLocationClient.stopLocation();
+                
+                // 重新设置定位参数，确保不使用缓存
+                if (mLocationOption != null) {
+                    mLocationOption.setOnceLocation(true);
+                    mLocationOption.setOnceLocationLatest(false); // 不使用缓存，强制重新定位
+                    mLocationClient.setLocationOption(mLocationOption);
+                }
+                
+                // 清除之前的位置信息
+                hasLocation = false;
+                currentLat = 0.0;
+                currentLon = 0.0;
+                
                 // 启动定位
                 mLocationClient.startLocation();
                 showToast("正在获取位置信息...");
+                LogUtil.i(TAG, "开始重新定位，不使用缓存");
             } catch (Exception e) {
                 LogUtil.e(TAG, "启动高德定位失败: " + e.getMessage(), e);
                 showToast("启动定位失败: " + e.getMessage());
@@ -368,45 +382,6 @@ public class HomeFragment extends Fragment {
         currentLon = location.getLongitude();
         if (tvLocation != null) {
             tvLocation.setText("定位：" + currentLat + ", " + currentLon);
-        }
-        
-        // 显示经纬度信息对话框
-        showLocationDialog(currentLat, currentLon, null);
-    }
-    
-    /**
-     * 显示位置信息对话框
-     */
-    private void showLocationDialog(double latitude, double longitude, AMapLocation amapLocation) {
-        try {
-            Context ctx = appContext != null ? appContext : requireContext();
-            if (ctx == null) return;
-
-            StringBuilder message = new StringBuilder();
-            message.append("实际采集位置信息：\n\n");
-            message.append(String.format(Locale.getDefault(), "纬度：%.7f\n", latitude));
-            message.append(String.format(Locale.getDefault(), "经度：%.7f\n", longitude));
-
-            // 如果有高德定位结果，显示更多信息
-            if (amapLocation != null) {
-                message.append(String.format(Locale.getDefault(), "\n精度：%.2f米\n", amapLocation.getAccuracy()));
-                if (amapLocation.getAddress() != null && !amapLocation.getAddress().isEmpty()) {
-                    message.append("\n地址：").append(amapLocation.getAddress());
-                }
-                if (amapLocation.getCity() != null && !amapLocation.getCity().isEmpty()) {
-                    message.append("\n城市：").append(amapLocation.getCity());
-                }
-            }
-
-            new AlertDialog.Builder(requireContext())
-                .setTitle("位置信息")
-                .setMessage(message.toString())
-                .setPositiveButton("确定", null)
-                .setNegativeButton("查看日志", (dialog, which) -> showLogInfo())
-                .setCancelable(false)
-                .show();
-        } catch (Exception e) {
-            LogUtil.e(TAG, "显示位置对话框失败: " + e.getMessage());
         }
     }
 
@@ -492,16 +467,69 @@ public class HomeFragment extends Fragment {
             return;
         }
         
-        com.example.studentattendanceterminal.models.AttendanceTask task = courseTaskMap.get(classId);
-        if (task == null || (!task.isActive() && !"ACTIVE".equals(task.getStatus()))) {
-            showToast("该课程当前没有需要签到的考勤任务");
-            return;
-        }
+        // 签到前重新获取最新的考勤任务数据，确保获取到最新的半径等信息
+        com.example.studentattendanceterminal.network.ApiClient.getStudentService()
+            .getAttendanceTasksByClassId(classId)
+            .enqueue(new retrofit2.Callback<java.util.List<com.example.studentattendanceterminal.models.AttendanceTask>>() {
+                @Override
+                public void onResponse(retrofit2.Call<java.util.List<com.example.studentattendanceterminal.models.AttendanceTask>> call,
+                                     retrofit2.Response<java.util.List<com.example.studentattendanceterminal.models.AttendanceTask>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        java.util.List<com.example.studentattendanceterminal.models.AttendanceTask> tasks = response.body();
+                        com.example.studentattendanceterminal.models.AttendanceTask task = null;
+                        for (com.example.studentattendanceterminal.models.AttendanceTask t : tasks) {
+                            if (t.isActive() || "ACTIVE".equals(t.getStatus())) {
+                                task = t;
+                                // 更新缓存
+                                courseTaskMap.put(classId, task);
+                                break;
+                            }
+                        }
+                        
+                        if (task == null) {
+                            showToast("该课程当前没有需要签到的考勤任务");
+                            return;
+                        }
+                        
+                        LogUtil.i(TAG, String.format("获取到最新考勤任务 - TaskID:%d, 半径:%d米, 位置:(%.6f, %.6f)", 
+                                task.getTaskId(), task.getRadius() != null ? task.getRadius() : 0,
+                                task.getLatitude() != null ? task.getLatitude() : 0,
+                                task.getLongitude() != null ? task.getLongitude() : 0));
+                        
+                        Long courseId = selectedCourse.id;
+                        final Long taskId = task.getTaskId();
+                        validateAndUpload(task, studentId, courseId, taskId, lat, lon, ts, base64Image, imageBytes, geoValid);
+                    } else {
+                        // 如果获取失败，使用缓存的任务
+                        com.example.studentattendanceterminal.models.AttendanceTask task = courseTaskMap.get(classId);
+                        if (task == null || (!task.isActive() && !"ACTIVE".equals(task.getStatus()))) {
+                            showToast("获取考勤任务失败，请重试");
+                            return;
+                        }
+                        LogUtil.w(TAG, "获取最新任务失败，使用缓存任务，半径:" + (task.getRadius() != null ? task.getRadius() : 0) + "米");
+                        Long courseId = selectedCourse.id;
+                        final Long taskId = task.getTaskId();
+                        validateAndUpload(task, studentId, courseId, taskId, lat, lon, ts, base64Image, imageBytes, geoValid);
+                    }
+                }
+                
+                @Override
+                public void onFailure(retrofit2.Call<java.util.List<com.example.studentattendanceterminal.models.AttendanceTask>> call, Throwable t) {
+                    LogUtil.e(TAG, "获取考勤任务失败: " + t.getMessage());
+                    // 如果网络失败，使用缓存的任务
+                    com.example.studentattendanceterminal.models.AttendanceTask task = courseTaskMap.get(classId);
+                    if (task == null || (!task.isActive() && !"ACTIVE".equals(task.getStatus()))) {
+                        showToast("网络错误，无法获取考勤任务");
+                        return;
+                    }
+                    LogUtil.w(TAG, "网络错误，使用缓存任务，半径:" + (task.getRadius() != null ? task.getRadius() : 0) + "米");
+                    Long courseId = selectedCourse.id;
+                    final Long taskId = task.getTaskId();
+                    validateAndUpload(task, studentId, courseId, taskId, lat, lon, ts, base64Image, imageBytes, geoValid);
+                }
+            });
         
-        Long courseId = selectedCourse.id;
-        final Long taskId = task.getTaskId(); // 保存taskId以便在异步线程中使用
-
-        validateAndUpload(task, studentId, courseId, taskId, lat, lon, ts, base64Image, imageBytes, geoValid);
+        // 提前返回，等待异步获取任务后再执行 validateAndUpload
     }
     
     private void uploadAttendanceRecord(Long userId, Long studentId, Long courseId, Long taskId, double lat, double lon, String base64Image, long ts,
@@ -558,13 +586,23 @@ public class HomeFragment extends Fragment {
         boolean rangeOk = geoValid && isWithinTaskRadius(lat, lon, task.getLatitude(), task.getLongitude(), task.getRadius());
         if (!rangeOk) {
             saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, false);
-            showToast("签到失败：未在考勤范围内");
+            double distance = haversineMeters(lat, lon, task.getLatitude() != null ? task.getLatitude() : 0, 
+                                              task.getLongitude() != null ? task.getLongitude() : 0);
+            String msg = String.format("签到失败：距离考勤地点%.0f米，超出%d米范围", distance, task.getRadius() != null ? task.getRadius() : 0);
+            showToast(msg);
+            LogUtil.e(TAG, msg);
             return;
         }
 
-        // 3. 调用后端人脸识别
+        // 3. 调用后端人脸识别（只比对当前登录用户的人脸）
+        Long loginUserId = getLoggedInUserId();
+        if (loginUserId == null) {
+            showToast("请先登录");
+            return;
+        }
+        
         com.example.studentattendanceterminal.models.FaceRecognitionRequest req =
-                new com.example.studentattendanceterminal.models.FaceRecognitionRequest(base64Image);
+                new com.example.studentattendanceterminal.models.FaceRecognitionRequest(base64Image, loginUserId.intValue());
 
         com.example.studentattendanceterminal.network.ApiClient.getStudentService()
                 .recognizeFace(req)
@@ -579,22 +617,28 @@ public class HomeFragment extends Fragment {
                             body = response.body();
                             matched = body.isHasFace() && body.isMatched();
                             msg = body.getMessage() == null ? "" : body.getMessage();
+                            
+                            // 打印人脸识别调试信息
+                            if (body.getDebugInfo() != null && !body.getDebugInfo().isEmpty()) {
+                                LogUtil.i(TAG, "=== 人脸识别调试信息 ===");
+                                LogUtil.i(TAG, body.getDebugInfo());
+                                LogUtil.i(TAG, "======================");
+                            }
+                            
+                            // 打印识别结果摘要
+                            LogUtil.i(TAG, String.format("人脸识别结果 - 检测到人脸:%s, 匹配成功:%s, 相似度:%.4f, 阈值:%.2f, 消息:%s",
+                                body.isHasFace(), body.isMatched(),
+                                body.getSimilarity() != null ? body.getSimilarity() : 0.0,
+                                body.getThreshold() != null ? body.getThreshold() : 0.0,
+                                msg));
                         } else {
                             msg = "识别接口错误：" + response.code();
                             LogUtil.e(TAG, "人脸识别接口失败: code=" + response.code());
                         }
 
                         if (matched) {
+                            // 人脸匹配成功（后端已验证是当前登录用户）
                             Long loginUserId = getLoggedInUserId();
-                            Integer faceUserId = body != null ? body.getUserId() : null;
-                            if (faceUserId != null && loginUserId != null && !faceUserId.equals(loginUserId.intValue())) {
-                                // 人脸匹配到其他用户，拒绝
-                                saveLocalRecord(studentId, courseId, imageBytes, ts, lat, lon, false);
-                                showToast("签到失败：人脸与登录账号不一致");
-                                reloadRecords();
-                                return;
-                            }
-                            // 先提示上传中
                             showToast("人脸匹配成功，正在上传...");
                             uploadAttendanceRecord(loginUserId, studentId, courseId, taskId, lat, lon, base64Image, ts, ok -> {
                                 if (ok) {
@@ -635,9 +679,12 @@ public class HomeFragment extends Fragment {
 
     private boolean isWithinTaskRadius(double lat, double lon, Double targetLat, Double targetLon, Integer radiusMeters) {
         if (targetLat == null || targetLon == null || radiusMeters == null || radiusMeters <= 0) {
+            LogUtil.e(TAG, "考勤位置信息不完整: targetLat=" + targetLat + ", targetLon=" + targetLon + ", radius=" + radiusMeters);
             return false;
         }
         double distance = haversineMeters(lat, lon, targetLat, targetLon);
+        LogUtil.i(TAG, String.format("距离检查 - 当前位置:(%.6f, %.6f), 目标位置:(%.6f, %.6f), 计算距离:%.2f米, 要求半径:%d米, 结果:%s",
+                lat, lon, targetLat, targetLon, distance, radiusMeters, (distance <= radiusMeters ? "通过" : "不通过")));
         return distance <= radiusMeters;
     }
 

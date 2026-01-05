@@ -5,6 +5,7 @@ package com.facial.recognition.dto;
  */
 public class FaceRecognitionRequest {
     private String faceImage;
+    private Integer userId;
 
     public String getFaceImage() {
         return faceImage;
@@ -12,6 +13,14 @@ public class FaceRecognitionRequest {
 
     public void setFaceImage(String faceImage) {
         this.faceImage = faceImage;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Integer userId) {
+        this.userId = userId;
     }
 }
 

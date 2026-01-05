@@ -303,6 +303,7 @@ var menuPermissions = {
         'teacher-management': true,
         'student-management': true,
         'course-management': true,
+        'admin-student-courses': true,
         'business': true,
         'publish-task': true,
         'statistics': true,
@@ -321,6 +322,7 @@ var menuPermissions = {
         'teacher-management': true,   // 只能看自己的教师信息
         'student-management': true,   // 只能看自己班级的学生
         'course-management': true,    // 只能看自己的课程
+        'admin-student-courses': false,
         'business': true,
         'publish-task': true,
         'statistics': true,
@@ -338,7 +340,8 @@ var menuPermissions = {
         'role-management': false,
         'teacher-management': false,
         'student-management': true,  // 只能看自己的信息
-        'course-management': true,   // 可以查看课程
+        'course-management': false,
+        'admin-student-courses': false,
         'business': true,
         'publish-task': false,
         'statistics': true,      // 可以查看考勤记录
@@ -867,7 +870,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 content = `
                     <div class="card">
                         <div class="card-header">
-                            <div class="card-title">学生选课查看（管理员）</div>
+                            <div class="card-title">学生选课查看</div>
                         </div>
                         <div class="card-body">
                             <div class="form-row" style="gap: 12px; margin-bottom: 12px;">
@@ -3526,8 +3529,6 @@ async function loadAvailableCourses() {
             if (countElement) {
                 countElement.textContent = courses.length;
             }
-
-            showToast('可选课程加载完成', 'success');
         })
         .catch(error => {
             console.error('加载可选课程失败:', error);
@@ -3623,8 +3624,6 @@ async function loadStudentSelectedCourses() {
             if (countElement) {
                 countElement.textContent = courses.length;
             }
-
-            showToast('已选课程加载完成', 'success');
         })
         .catch(error => {
             console.error('加载已选课程失败:', error);
@@ -3836,7 +3835,7 @@ async function loadAdminStudentCoursesAll() {
     }
 }
 
-// 学生选课查看（管理员）分页状态
+// 学生选课查看分页状态
 let adminCourseViewState = { rows: [], page: 0, size: 10, totalPages: 1 };
 
 function renderAdminCourseViewTable() {
@@ -4278,7 +4277,23 @@ async function startFaceCamera(videoEl, statusText) {
         if (statusText) statusText.textContent = '摄像头已开启';
     } catch (err) {
         console.error('打开摄像头失败：', err);
-        showToast('无法访问摄像头，请检查权限或设备', 'error');
+        let errorMsg = '无法访问摄像头';
+        
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            errorMsg = '摄像头权限被拒绝，请在浏览器设置中允许访问摄像头';
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            errorMsg = '未找到摄像头设备，请检查设备连接';
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+            errorMsg = '摄像头被占用，请关闭其他使用摄像头的程序';
+        } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
+            errorMsg = '摄像头不支持所需配置';
+        } else if (err.name === 'TypeError') {
+            errorMsg = '摄像头参数错误';
+        } else if (err.name === 'SecurityError') {
+            errorMsg = '安全限制：请使用 HTTPS 或 localhost 访问';
+        }
+        
+        showToast(errorMsg, 'error');
         if (statusText) statusText.textContent = '摄像头未开启';
     }
 }

@@ -204,9 +204,8 @@ public class AttendanceTaskServiceImpl implements AttendanceTaskService {
         
         // 2. 获取该班级的所有学生（通过 StudentCourseClass，状态为正常的学生）
         // 注意：数据库 Status 是 TINYINT(1)，1表示正常，0表示退课
-        // 由于实体类中 Status 是 String，这里使用 "1" 字符串
         List<StudentCourseClass> enrollments = studentCourseClassRepository
-            .findByClassIdAndStatus(courseClassId, "1");
+            .findByClassIdAndStatus(courseClassId, 1);
         
         // 3. 获取该任务的考勤记录
         List<AttendanceRecord> records = attendanceRecordRepository.findByTaskId(taskId);

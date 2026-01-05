@@ -8,9 +8,12 @@ import com.facial.recognition.pojo.Role;
 import com.facial.recognition.pojo.Student;
 import com.facial.recognition.pojo.Teacher;
 import com.facial.recognition.pojo.User;
+import com.facial.recognition.repository.AttendanceRecordRepository;
 import com.facial.recognition.repository.CourseClassRepository;
 import com.facial.recognition.repository.CourseRepository;
+import com.facial.recognition.repository.FaceDataRepository;
 import com.facial.recognition.repository.RoleRepository;
+import com.facial.recognition.repository.StudentCourseClassRepository;
 import com.facial.recognition.repository.StudentRepository;
 import com.facial.recognition.repository.TeacherRepository;
 import com.facial.recognition.repository.UserRepository;
@@ -53,6 +56,15 @@ public class UserService implements IUserService {
     
     @Autowired
     private CourseClassRepository courseClassRepository;
+    
+    @Autowired
+    private StudentCourseClassRepository studentCourseClassRepository;
+    
+    @Autowired
+    private AttendanceRecordRepository attendanceRecordRepository;
+    
+    @Autowired
+    private FaceDataRepository faceDataRepository;
 
     @Override
     public User add(User user) {
@@ -108,21 +120,44 @@ public class UserService implements IUserService {
     }
 
     @Override
+    @Transactional
     public void delete(Integer id) {
-        // 检查是否存在关联的学生记录
-        Optional<Student> student = studentRepository.findByUserId(id);
-        
-        if (student.isPresent()) {
-            throw new IllegalStateException(
-                "无法删除用户：该用户还有关联的学生记录。请先删除或处理学生记录。"
-            );
-        }
-        
         // 检查用户是否存在
         if (!userRepository.existsById(id)) {
             throw new RuntimeException("User not found with id: " + id);
         }
         
+        // 级联删除学生相关数据
+        Optional<Student> student = studentRepository.findByUserId(id);
+        if (student.isPresent()) {
+            Long studentId = student.get().getStudentId();
+            
+            // 1. 删除考勤记录
+            List<com.facial.recognition.pojo.AttendanceRecord> records = attendanceRecordRepository.findByStudentId(studentId);
+            attendanceRecordRepository.deleteAll(records);
+            
+            // 2. 删除选课记录
+            List<com.facial.recognition.pojo.StudentCourseClass> enrollments = studentCourseClassRepository.findByStudentId(studentId);
+            studentCourseClassRepository.deleteAll(enrollments);
+            
+            // 3. 删除人脸数据
+            faceDataRepository.deleteByUserId(id);
+            
+            // 4. 删除学生记录
+            studentRepository.deleteById(studentId);
+        }
+        
+        // 级联删除教师相关数据
+        Optional<Teacher> teacher = teacherRepository.findByUserId(id);
+        if (teacher.isPresent()) {
+            // 删除人脸数据
+            faceDataRepository.deleteByUserId(id);
+            
+            // 删除教师记录
+            teacherRepository.deleteById(teacher.get().getTeacherId());
+        }
+        
+        // 删除用户记录
         userRepository.deleteById(id);
     }
     

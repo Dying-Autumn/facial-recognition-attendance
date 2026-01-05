@@ -49,36 +49,44 @@ public class AttendanceRecordServiceImpl implements AttendanceRecordService {
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
 
-        // 取当前学生所在的班级
+        // 取当前学生所在的班级及选课时间
         List<StudentCourseClass> enrollments = studentCourseClassRepository.findByStudentId(studentId);
-        Set<Long> classIds = enrollments.stream()
-                .map(StudentCourseClass::getClassId)
-                .collect(Collectors.toSet());
-
+        
         LocalDateTime now = LocalDateTime.now();
-        List<AttendanceTask> endedTasks = new ArrayList<>();
-        for (Long classId : classIds) {
+        List<AttendanceRecord> missing = new ArrayList<>();
+        
+        for (StudentCourseClass enrollment : enrollments) {
+            Long classId = enrollment.getClassId();
+            LocalDateTime enrollmentDate = enrollment.getEnrollmentDate();
+            
             List<AttendanceTask> tasks = attendanceTaskRepository.findByCourseClassId(classId);
             if (tasks != null) {
-                tasks.stream()
-                        .filter(t -> t.getEndTime() != null && t.getEndTime().isBefore(now))
-                        .forEach(endedTasks::add);
+                for (AttendanceTask task : tasks) {
+                    Long tid = task.getTaskId();
+                    if (tid == null) continue;
+                    if (attendedTaskIds.contains(tid)) continue;
+                    
+                    // 只处理已结束的任务
+                    if (task.getEndTime() == null || !task.getEndTime().isBefore(now)) {
+                        continue;
+                    }
+                    
+                    // 只处理学生选课之后开始的任务
+                    if (enrollmentDate != null && task.getStartTime() != null 
+                            && task.getStartTime().isBefore(enrollmentDate)) {
+                        continue;
+                    }
+                    
+                    AttendanceRecord r = new AttendanceRecord();
+                    r.setTaskId(tid);
+                    r.setStudentId(studentId);
+                    r.setCheckInTime(task.getEndTime());
+                    r.setCreatedDate(task.getEndTime());
+                    r.setAttendanceResult("缺勤");
+                    r.setRemark("任务已结束未签到");
+                    missing.add(r);
+                }
             }
-        }
-
-        List<AttendanceRecord> missing = new ArrayList<>();
-        for (AttendanceTask task : endedTasks) {
-            Long tid = task.getTaskId();
-            if (tid == null) continue;
-            if (attendedTaskIds.contains(tid)) continue;
-            AttendanceRecord r = new AttendanceRecord();
-            r.setTaskId(tid);
-            r.setStudentId(studentId);
-            r.setCheckInTime(task.getEndTime());
-            r.setCreatedDate(task.getEndTime());
-            r.setAttendanceResult("缺勤");
-            r.setRemark("任务已结束未签到");
-            missing.add(r);
         }
 
         List<AttendanceRecord> all = new ArrayList<>(existing);

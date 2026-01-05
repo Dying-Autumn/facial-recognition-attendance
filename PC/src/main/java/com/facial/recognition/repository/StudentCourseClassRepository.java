@@ -22,23 +22,23 @@ public interface StudentCourseClassRepository extends JpaRepository<StudentCours
     Optional<StudentCourseClass> findByStudentIdAndClassId(Long studentId, Long classId);
     
     // 根据状态查找选课记录
-    List<StudentCourseClass> findByStatus(String status);
+    List<StudentCourseClass> findByStatus(Integer status);
     
     // 根据学生ID和状态查找选课记录
-    List<StudentCourseClass> findByStudentIdAndStatus(Long studentId, String status);
+    List<StudentCourseClass> findByStudentIdAndStatus(Long studentId, Integer status);
     
     // 根据班级ID和状态查找选课记录
-    List<StudentCourseClass> findByClassIdAndStatus(Long classId, String status);
+    List<StudentCourseClass> findByClassIdAndStatus(Long classId, Integer status);
     
     // 统计班级中的学生数量
-    @Query("SELECT COUNT(scc) FROM StudentCourseClass scc WHERE scc.classId = :classId AND scc.status = 'ENROLLED'")
+    @Query("SELECT COUNT(scc) FROM StudentCourseClass scc WHERE scc.classId = :classId AND scc.status = 1")
     Long countEnrolledStudentsByClassId(@Param("classId") Long classId);
     
     // 查找学生已完成的课程
-    @Query("SELECT scc FROM StudentCourseClass scc WHERE scc.studentId = :studentId AND scc.status = 'COMPLETED'")
+    @Query("SELECT scc FROM StudentCourseClass scc WHERE scc.studentId = :studentId AND scc.status = 1")
     List<StudentCourseClass> findCompletedCoursesByStudentId(@Param("studentId") Long studentId);
     
     // 查找学生正在进行的课�?
-    @Query("SELECT scc FROM StudentCourseClass scc WHERE scc.studentId = :studentId AND scc.status = 'ENROLLED'")
+    @Query("SELECT scc FROM StudentCourseClass scc WHERE scc.studentId = :studentId AND scc.status = 1")
     List<StudentCourseClass> findEnrolledCoursesByStudentId(@Param("studentId") Long studentId);
 }

@@ -1,8 +1,10 @@
 package com.facial.recognition.service.impl;
 
 import com.facial.recognition.pojo.Teacher;
+import com.facial.recognition.repository.FaceDataRepository;
 import com.facial.recognition.repository.TeacherRepository;
 import com.facial.recognition.service.TeacherService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +14,9 @@ import java.util.Optional;
 @Service
 public class TeacherServiceImpl implements TeacherService {
     private final TeacherRepository teacherRepository;
+    
+    @Autowired
+    private FaceDataRepository faceDataRepository;
 
     public TeacherServiceImpl(TeacherRepository teacherRepository) { this.teacherRepository = teacherRepository; }
 
@@ -32,7 +37,14 @@ public class TeacherServiceImpl implements TeacherService {
 
     @Override
     @Transactional
-    public void deleteByUserId(Integer userId) { teacherRepository.findByUserId(userId).ifPresent(t -> teacherRepository.delete(t)); }
+    public void deleteByUserId(Integer userId) { 
+        teacherRepository.findByUserId(userId).ifPresent(t -> {
+            // 删除人脸数据
+            faceDataRepository.deleteByUserId(userId);
+            // 删除教师记录
+            teacherRepository.delete(t);
+        });
+    }
 
     @Override
     public List<Teacher> listAll() { return teacherRepository.findAll(); }

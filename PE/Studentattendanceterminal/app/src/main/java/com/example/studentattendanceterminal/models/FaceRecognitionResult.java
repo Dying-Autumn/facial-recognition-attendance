@@ -8,6 +8,7 @@ public class FaceRecognitionResult {
     private Double similarity;
     private Double threshold;
     private String message;
+    private String debugInfo;
 
     public boolean isHasFace() {
         return hasFace;
@@ -35,6 +36,10 @@ public class FaceRecognitionResult {
 
     public String getMessage() {
         return message;
+    }
+
+    public String getDebugInfo() {
+        return debugInfo;
     }
 }
 

@@ -21,7 +21,7 @@ public class StudentCourseClass implements Serializable {
     private LocalDateTime enrollmentDate; // 选课时间
 
     @Column(name = "Status")
-    private String status; // 状态：ENROLLED, DROPPED, COMPLETED
+    private Integer status; // 状态：1=正常, 0=退课
 
     public StudentCourseClass() {}
 
@@ -29,7 +29,7 @@ public class StudentCourseClass implements Serializable {
         this.studentId = studentId;
         this.classId = classId;
         this.enrollmentDate = LocalDateTime.now();
-        this.status = "ENROLLED";
+        this.status = 1;
     }
 
     // Getters and Setters
@@ -42,7 +42,7 @@ public class StudentCourseClass implements Serializable {
     public LocalDateTime getEnrollmentDate() { return enrollmentDate; }
     public void setEnrollmentDate(LocalDateTime enrollmentDate) { this.enrollmentDate = enrollmentDate; }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public Integer getStatus() { return status; }
+    public void setStatus(Integer status) { this.status = status; }
 }
 

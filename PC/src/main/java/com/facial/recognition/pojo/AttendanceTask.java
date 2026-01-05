@@ -13,12 +13,12 @@ public class AttendanceTask {
     @Column(name = "TaskID")
     private Long taskId;
 
-    @Column(name = "ClassID", nullable = false, insertable = false, updatable = false)
+    @Column(name = "ClassID", nullable = false)
     private Long courseClassId;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ClassID", referencedColumnName = "ClassID")
+    @JoinColumn(name = "ClassID", referencedColumnName = "ClassID", insertable = false, updatable = false)
     private CourseClass courseClass;
 
     // 数据库中 AttendanceTask 表没有 TeacherID，这里先注释掉或设为Transient

@@ -11,6 +11,7 @@ public class FaceRecognitionResult {
     private Double similarity;
     private Double threshold;
     private String message;
+    private String debugInfo;
 
     public boolean isHasFace() {
         return hasFace;
@@ -66,6 +67,14 @@ public class FaceRecognitionResult {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getDebugInfo() {
+        return debugInfo;
+    }
+
+    public void setDebugInfo(String debugInfo) {
+        this.debugInfo = debugInfo;
     }
 }
 

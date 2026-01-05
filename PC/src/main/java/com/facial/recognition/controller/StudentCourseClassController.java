@@ -98,7 +98,7 @@ public class StudentCourseClassController {
 
     // 根据状态获取选课记录
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<StudentCourseClass>> getEnrollmentsByStatus(@PathVariable String status) {
+    public ResponseEntity<List<StudentCourseClass>> getEnrollmentsByStatus(@PathVariable Integer status) {
         List<StudentCourseClass> enrollments = studentCourseClassService.findByStatus(status);
         return ResponseEntity.ok(enrollments);
     }
@@ -107,7 +107,7 @@ public class StudentCourseClassController {
     @GetMapping("/student/{studentId}/status/{status}")
     public ResponseEntity<List<StudentCourseClass>> getEnrollmentsByStudentAndStatus(
             @RequestHeader("X-User-Id") Integer requesterUserId,
-            @PathVariable Long studentId, @PathVariable String status) {
+            @PathVariable Long studentId, @PathVariable Integer status) {
         accessControlService.assertCanAccessStudentCourse(requesterUserId, studentId);
         List<StudentCourseClass> enrollments = studentCourseClassService
             .findByStudentIdAndStatus(studentId, status);
@@ -118,7 +118,7 @@ public class StudentCourseClassController {
     @GetMapping("/class/{courseClassId}/status/{status}")
     public ResponseEntity<List<StudentCourseClass>> getEnrollmentsByClassAndStatus(
             @RequestHeader("X-User-Id") Integer requesterUserId,
-            @PathVariable Long courseClassId, @PathVariable String status) {
+            @PathVariable Long courseClassId, @PathVariable Integer status) {
         accessControlService.assertCanAccessCourseClass(requesterUserId, courseClassId);
         List<StudentCourseClass> enrollments = studentCourseClassService
             .findByCourseClassIdAndStatus(courseClassId, status);
@@ -128,14 +128,14 @@ public class StudentCourseClassController {
     // 更新选课状态（注意：StudentCourseClass使用复合主键，此方法需要studentId和classId）
     @PatchMapping("/{id}/status")
     public ResponseEntity<Map<String, Object>> updateEnrollmentStatus(
-            @PathVariable Long id, @RequestParam String status) {
+            @PathVariable Long id, @RequestParam Integer status) {
         if (id == null || id <= 0) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "无效的ID参数");
             return ResponseEntity.badRequest().body(response);
         }
-        if (status == null || status.trim().isEmpty() || "undefined".equalsIgnoreCase(status)) {
+        if (status == null || (status != 0 && status != 1)) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "状态参数无效");

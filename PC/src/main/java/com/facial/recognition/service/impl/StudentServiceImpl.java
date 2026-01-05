@@ -1,6 +1,8 @@
 package com.facial.recognition.service.impl;
 
 import com.facial.recognition.pojo.Student;
+import com.facial.recognition.repository.AttendanceRecordRepository;
+import com.facial.recognition.repository.FaceDataRepository;
 import com.facial.recognition.repository.StudentRepository;
 import com.facial.recognition.repository.StudentCourseClassRepository;
 import com.facial.recognition.repository.UserRepository;
@@ -24,6 +26,12 @@ public class StudentServiceImpl implements StudentService {
     
     @Autowired
     private StudentCourseClassRepository studentCourseClassRepository;
+    
+    @Autowired
+    private AttendanceRecordRepository attendanceRecordRepository;
+    
+    @Autowired
+    private FaceDataRepository faceDataRepository;
     
     @Override
     public Student createStudent(Student student) {
@@ -107,22 +115,30 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
+    @Transactional
     public void deleteStudent(Long studentId) {
-        // 检查是否存在选课记录
-        List<com.facial.recognition.pojo.StudentCourseClass> enrollments = 
-            studentCourseClassRepository.findByStudentId(studentId);
-        
-        if (!enrollments.isEmpty()) {
-            throw new IllegalStateException(
-                "无法删除学生：该学生还有 " + enrollments.size() + " 条选课记录。请先删除或处理选课记录。"
-            );
-        }
-        
         // 检查学生是否存在
         if (!studentRepository.existsById(studentId)) {
             throw new RuntimeException("Student not found with id: " + studentId);
         }
         
+        Student student = studentRepository.findById(studentId).get();
+        Integer userId = student.getUserId();
+        
+        // 1. 删除考勤记录
+        List<com.facial.recognition.pojo.AttendanceRecord> records = attendanceRecordRepository.findByStudentId(studentId);
+        attendanceRecordRepository.deleteAll(records);
+        
+        // 2. 删除选课记录
+        List<com.facial.recognition.pojo.StudentCourseClass> enrollments = studentCourseClassRepository.findByStudentId(studentId);
+        studentCourseClassRepository.deleteAll(enrollments);
+        
+        // 3. 删除人脸数据
+        if (userId != null) {
+            faceDataRepository.deleteByUserId(userId);
+        }
+        
+        // 4. 删除学生记录
         studentRepository.deleteById(studentId);
     }
 

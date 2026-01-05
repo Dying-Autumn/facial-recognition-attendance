@@ -26,16 +26,16 @@ public interface StudentCourseClassService {
     List<StudentCourseClass> findByClassId(Long classId);
     
     // 根据状态查找选课记录
-    List<StudentCourseClass> findByStatus(String status);
+    List<StudentCourseClass> findByStatus(Integer status);
     
     // 根据学生ID和状态查找选课记录
-    List<StudentCourseClass> findByStudentIdAndStatus(Long studentId, String status);
+    List<StudentCourseClass> findByStudentIdAndStatus(Long studentId, Integer status);
     
     // 根据班级ID和状态查找选课记录
-    List<StudentCourseClass> findByClassIdAndStatus(Long classId, String status);
+    List<StudentCourseClass> findByClassIdAndStatus(Long classId, Integer status);
     
     // 更新选课状态
-    StudentCourseClass updateStatus(Long id, String status);
+    StudentCourseClass updateStatus(Long id, Integer status);
     
     // 统计班级中的学生数量
     Long countEnrolledStudentsByClassId(Long classId);
@@ -56,7 +56,7 @@ public interface StudentCourseClassService {
 
     List<StudentCourseClass> findByCourseClassId(Long courseClassId);
 
-    List<StudentCourseClass> findByCourseClassIdAndStatus(Long courseClassId, String status);
+    List<StudentCourseClass> findByCourseClassIdAndStatus(Long courseClassId, Integer status);
 
     Long countEnrolledStudentsByCourseClassId(Long courseClassId);
     

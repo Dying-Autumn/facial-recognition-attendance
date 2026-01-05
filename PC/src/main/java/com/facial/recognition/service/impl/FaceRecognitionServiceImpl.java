@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Service
 public class FaceRecognitionServiceImpl implements FaceRecognitionService {
 
-    private static final double DEFAULT_THRESHOLD = 0.38; // 余弦相似度阈值，可按实际调优
+    private static final double DEFAULT_THRESHOLD = 0.5; // 余弦相似度阈值，可按实际调优
 
     @Autowired
     private FaceEmbeddingClient faceEmbeddingClient;
@@ -66,16 +66,80 @@ public class FaceRecognitionServiceImpl implements FaceRecognitionService {
 
         double[] query = toArray(embeddingResult.getEmbedding());
 
+        FaceRecognitionResult result = new FaceRecognitionResult();
+        result.setHasFace(true);
+        result.setThreshold(DEFAULT_THRESHOLD);
+
+        // 如果指定了userId，只比对该用户的人脸
+        if (request.getUserId() != null) {
+            Optional<FaceData> userFaceData = faceDataRepository.findByUserId(request.getUserId());
+            if (userFaceData.isEmpty() || userFaceData.get().getFaceTemplate() == null) {
+                result.setMatched(false);
+                result.setMessage("该用户未录入人脸");
+                return result;
+            }
+            
+            MatchCandidate candidate = toCandidate(userFaceData.get(), query);
+            if (candidate == null) {
+                result.setMatched(false);
+                result.setMessage("人脸数据解析失败");
+                return result;
+            }
+            
+            result.setSimilarity(candidate.similarity);
+            result.setUserId(request.getUserId());
+            
+            // 生成调试信息
+            StringBuilder debug = new StringBuilder();
+            debug.append("【拍照特征向量】(前10维): ");
+            for (int i = 0; i < Math.min(10, query.length); i++) {
+                debug.append(String.format("%.4f", query[i]));
+                if (i < Math.min(10, query.length) - 1) debug.append(", ");
+            }
+            debug.append("\n");
+            
+            try {
+                List<Double> dbList = objectMapper.readValue(userFaceData.get().getFaceTemplate(), 
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, Double.class));
+                debug.append("【数据库特征向量】UserID=").append(request.getUserId()).append(" (前10维): ");
+                for (int i = 0; i < Math.min(10, dbList.size()); i++) {
+                    debug.append(String.format("%.4f", dbList.get(i)));
+                    if (i < Math.min(10, dbList.size()) - 1) debug.append(", ");
+                }
+                debug.append("\n");
+            } catch (Exception e) {
+                debug.append("【数据库特征向量】解析失败\n");
+            }
+            
+            debug.append(String.format("【相似度】%.4f (阈值: %.2f)\n", candidate.similarity, DEFAULT_THRESHOLD));
+            debug.append("【结论】");
+            
+            if (candidate.similarity >= DEFAULT_THRESHOLD) {
+                result.setMatched(true);
+                Optional<User> userOpt = userRepository.findById(request.getUserId());
+                userOpt.ifPresent(u -> result.setUserName(u.getRealName()));
+                result.setMessage("匹配成功");
+                debug.append("匹配成功");
+                if (result.getUserName() != null) {
+                    debug.append(" - 姓名: ").append(result.getUserName());
+                }
+            } else {
+                result.setMatched(false);
+                result.setMessage("人脸不匹配");
+                debug.append("不匹配 - 相似度低于阈值");
+            }
+            
+            result.setDebugInfo(debug.toString());
+            return result;
+        }
+
+        // 未指定userId，遍历所有人脸库（保留原逻辑）
         List<FaceData> all = faceDataRepository.findAll();
         List<MatchCandidate> candidates = all.stream()
                 .map(fd -> toCandidate(fd, query))
                 .filter(c -> c != null)
                 .sorted(Comparator.comparingDouble(MatchCandidate::similarity).reversed())
                 .collect(Collectors.toList());
-
-        FaceRecognitionResult result = new FaceRecognitionResult();
-        result.setHasFace(true);
-        result.setThreshold(DEFAULT_THRESHOLD);
 
         if (candidates.isEmpty()) {
             result.setMatched(false);
@@ -85,17 +149,53 @@ public class FaceRecognitionServiceImpl implements FaceRecognitionService {
 
         MatchCandidate best = candidates.get(0);
         result.setSimilarity(best.similarity);
+        
+        // 生成调试信息
+        StringBuilder debug = new StringBuilder();
+        debug.append("【拍照特征向量】(前10维): ");
+        for (int i = 0; i < Math.min(10, query.length); i++) {
+            debug.append(String.format("%.4f", query[i]));
+            if (i < Math.min(10, query.length) - 1) debug.append(", ");
+        }
+        debug.append("\n");
+        
+        // 获取数据库中最匹配的特征向量
+        Optional<FaceData> bestFaceData = faceDataRepository.findByUserId(best.userId);
+        if (bestFaceData.isPresent() && bestFaceData.get().getFaceTemplate() != null) {
+            try {
+                List<Double> dbList = objectMapper.readValue(bestFaceData.get().getFaceTemplate(), 
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, Double.class));
+                debug.append("【数据库特征向量】UserID=").append(best.userId).append(" (前10维): ");
+                for (int i = 0; i < Math.min(10, dbList.size()); i++) {
+                    debug.append(String.format("%.4f", dbList.get(i)));
+                    if (i < Math.min(10, dbList.size()) - 1) debug.append(", ");
+                }
+                debug.append("\n");
+            } catch (Exception e) {
+                debug.append("【数据库特征向量】解析失败\n");
+            }
+        }
+        
+        debug.append(String.format("【相似度】%.4f (阈值: %.2f)\n", best.similarity, DEFAULT_THRESHOLD));
+        debug.append("【结论】");
+        
         if (best.similarity >= DEFAULT_THRESHOLD) {
             result.setMatched(true);
             result.setUserId(best.userId);
             Optional<User> userOpt = userRepository.findById(best.userId);
             userOpt.ifPresent(u -> result.setUserName(u.getRealName()));
             result.setMessage("匹配成功");
+            debug.append("匹配成功 - UserID: ").append(best.userId);
+            if (result.getUserName() != null) {
+                debug.append(", 姓名: ").append(result.getUserName());
+            }
         } else {
             result.setMatched(false);
             result.setMessage("未匹配到库内人脸");
+            debug.append("未匹配 - 相似度低于阈值");
         }
-
+        
+        result.setDebugInfo(debug.toString());
         return result;
     }
 
